@@ -4,9 +4,7 @@ from typing import Optional
 import pandas as pd
 from tqdm import tqdm
 
-from config import (CODE_METRICS_DF_FILE_PATH, MARKDOWN_METRICS_DF_FILE_PATH,
-                    NOTEBOOK_METRICS_DF_FILE_PATH,
-                    USER_PT_METRICS_DF_FILE_PATH)
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -138,24 +136,33 @@ def get_aggregated_notebook_metrics(
     return notebook_metrics_df
 
 
-def aggregate_notebook_metrics():
-
+def aggregate_notebook_metrics(
+    code_metrics_df_file_path: str = config.CODE_METRICS_DF_FILE_PATH,
+    markdown_metrics_df_file_path: str = config.MARKDOWN_METRICS_DF_FILE_PATH,
+    notebook_metrics_df_file_path: str = config.NOTEBOOK_METRICS_DF_FILE_PATH,
+    user_pt_metrics_df_file_path: Optional[str] = None,
+):
     logger.info("Going to get_aggregated_code_cell_metrics...")
 
-    code_df = pd.read_csv(CODE_METRICS_DF_FILE_PATH)
-    markdown_df = pd.read_csv(MARKDOWN_METRICS_DF_FILE_PATH)
-    user_pt_df = (
-        pd.read_csv(USER_PT_METRICS_DF_FILE_PATH)
-        .rename(columns={"Id_x": "kernel_id", "PerformanceTier": "PT"})
-        .drop(columns=["Unnamed: 0"])
-    )
+    code_df = pd.read_csv(code_metrics_df_file_path)
+    markdown_df = pd.read_csv(markdown_metrics_df_file_path)
+    user_pt_df = None
+    if user_pt_metrics_df_file_path is not None:    
+        user_pt_df = (
+            pd.read_csv(user_pt_metrics_df_file_path)
+            .rename(columns={"Id_x": "kernel_id", "PerformanceTier": "PT"})
+            .drop(columns=["Unnamed: 0"])
+        )
+    logger.info("Loaded files successfully.")
+
     notebook_metrics_df = get_aggregated_notebook_metrics(
         code_cell_metrics_df=code_df,
         markdown_cell_metrics_df=markdown_df,
         user_pt_df=user_pt_df,
     )
+    
     logger.info("Going to save...")
     notebook_metrics_df.info()
     logger.info(f"Shape:{notebook_metrics_df.shape}")
-    notebook_metrics_df.to_csv(NOTEBOOK_METRICS_DF_FILE_PATH)
+    notebook_metrics_df.to_csv(notebook_metrics_df_file_path)
     logger.info("Saved Successfully.")
