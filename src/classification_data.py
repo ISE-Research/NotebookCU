@@ -5,6 +5,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
+import config
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,11 +39,17 @@ class DataSelector:
         logger.info("Loaded features and scores successfully.")
 
     def get_train_test_split(
-        self, notebook_metrics_filters: list = [], notebook_scores_filters: list = [], split_factor: float = 0.7
+        self,
+        notebook_metrics_filters: list = [],
+        notebook_scores_filters: list = [],
+        split_factor: float = 0.7,
+        sort_by: str = config.DEFAULT_NOTEBOOK_SCORES_SORT_BY,
     ):
         features_df = self.apply_filters(self.notebook_metrics_df, notebook_metrics_filters)
         scores_df = self.apply_filters(self.notebook_scores_df, notebook_scores_filters)
-        return self._split_data(features_df=features_df, scores_df=scores_df, split_factor=split_factor)
+        return self._split_data(
+            features_df=features_df, scores_df=scores_df, split_factor=split_factor, sort_by=sort_by
+        )
 
     @staticmethod
     def apply_filters(df: pd.DataFrame, filters: list) -> pd.DataFrame:
@@ -49,11 +57,7 @@ class DataSelector:
             df = df.query(filter)
         return df
 
-    def _prepare_data(
-        self,
-        features_df: pd.DataFrame,
-        scores_df: pd.DataFrame,
-    ) -> pd.DataFrame:
+    def _prepare_data(self, features_df: pd.DataFrame, scores_df: pd.DataFrame, sort_by: str) -> pd.DataFrame:
         logger.info(f"features_df:\n{features_df.columns}\n{features_df.shape}\n")
         features_df.info()
 
@@ -83,7 +87,7 @@ class DataSelector:
         )
 
         logger.info("Going to sort merged_df...")
-        merged_df.sort_values(by=["combined_score"], inplace=True)
+        merged_df.sort_values(by=[sort_by], inplace=True)
 
         # Drop scores and unique id fields
         merged_df.drop(
@@ -135,8 +139,9 @@ class DataSelector:
         features_df: pd.DataFrame,
         scores_df: pd.DataFrame,
         split_factor: float = 0.7,
+        sort_by: str = config.DEFAULT_NOTEBOOK_SCORES_SORT_BY,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, list, list]:
-        notebooks_sorted_by_score = self._prepare_data(features_df=features_df, scores_df=scores_df)
+        notebooks_sorted_by_score = self._prepare_data(features_df=features_df, scores_df=scores_df, sort_by=sort_by)
 
         logger.info(f"get_train_test_split df.shape: {notebooks_sorted_by_score.shape}")
         X = notebooks_sorted_by_score.copy()
