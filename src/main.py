@@ -1,13 +1,16 @@
 import logging
-
-from logger import init_logger
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
+from typing import Optional
 
 import typer
 from typing_extensions import Annotated
-from process_cell_metrics import run_code_metrics_extraction, run_markdown_metrics_extraction
+
 import config
+from logger import init_logger
+from notebook_metrics import aggregate_notebook_metrics
+from process_cell_metrics import (run_code_metrics_extraction,
+                                  run_markdown_metrics_extraction)
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
@@ -23,11 +26,11 @@ def extract_metrics(
     input_file_path: Annotated[
         Path,
         typer.Argument(help="File to process."),
-    ] = config.CODE_DF_FILE_PATH,
+    ] = Path(config.CODE_DF_FILE_PATH),
     output_file_path: Annotated[
         Path,
         typer.Argument(help="Desired destination path of extracted metrics."),
-    ] = config.CODE_METRICS_DF_FILE_PATH,
+    ] = Path(config.CODE_METRICS_DF_FILE_PATH),
     chunk_size: Annotated[
         int,
         typer.Argument(help="Size of chunks for processing the csv."),
@@ -61,6 +64,37 @@ def extract_metrics(
             limit_chunk_count=limit_chunk_count,
         )
 
+
+@app.command()
+def aggregate_metrics(
+    code_metrics_df_file_path: Annotated[
+        Path, 
+        typer.Argument(),
+        ] = Path(config.CODE_METRICS_DF_FILE_PATH),
+    markdown_metrics_df_file_path: Annotated[
+        Path, 
+        typer.Argument(),
+        ] = Path(config.MARKDOWN_METRICS_DF_FILE_PATH),
+    notebook_metrics_df_file_path:Annotated[
+        Path, 
+        typer.Argument(),
+        ] = Path(config.NOTEBOOK_METRICS_DF_FILE_PATH),
+    user_pt_metrics_df_file_path: Annotated[
+        Optional[Path], 
+        typer.Argument(),
+        ] = None,
+):
+    """
+    Aggregate code metrics and markdown metrics to get the notebook metrics dataframe.
+
+    user_pt_metrics_df_file_path is optional
+    """
+    aggregate_notebook_metrics(
+        code_metrics_df_file_path=str(code_metrics_df_file_path.resolve()),
+        markdown_metrics_df_file_path=str(markdown_metrics_df_file_path.resolve()),
+        notebook_metrics_df_file_path=str(notebook_metrics_df_file_path.resolve()),
+        user_pt_metrics_df_file_path=str(user_pt_metrics_df_file_path.resolve()) if user_pt_metrics_df_file_path else None
+    )
 
 if __name__ == "__main__":
     init_logger()
