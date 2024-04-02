@@ -20,24 +20,46 @@ class FileType(str, Enum):
 
 @app.command()
 def extract_metrics(
-        input_file_path: Annotated[Path, typer.Argument()] = config.CODE_DF_FILE_PATH,
-        output_file_path: Annotated[Path, typer.Argument()] = config.CODE_METRICS_DF_FILE_PATH,
-        chunk_size: Annotated[int, typer.Argument()] = config.CHUNK_SIZE,
-        limit_chunk_count: Annotated[int, typer.Argument()] = config.LIMIT_CHUNK_COUNT,
-        file_type: Annotated[FileType, typer.Option(case_sensitive=False)] = FileType.code,
+    input_file_path: Annotated[
+        Path,
+        typer.Argument(help="File to process."),
+    ] = config.CODE_DF_FILE_PATH,
+    output_file_path: Annotated[
+        Path,
+        typer.Argument(help="Desired destination path of extracted metrics."),
+    ] = config.CODE_METRICS_DF_FILE_PATH,
+    chunk_size: Annotated[
+        int,
+        typer.Argument(help="Size of chunks for processing the csv."),
+    ] = config.CHUNK_SIZE,
+    limit_chunk_count: Annotated[
+        int,
+        typer.Argument(help="Number of chunks to process (leave as is for no limit)."),
+    ] = config.LIMIT_CHUNK_COUNT,
+    file_type: Annotated[
+        FileType,
+        typer.Option(case_sensitive=False),
+    ] = FileType.code,
 ):
+    """
+    Extract metrics of notebook blocks gathered in a csv file.
+
+    Use --file-type to decide the type of extraction
+    """
     if file_type == FileType.code:
-        run_code_metrics_extraction(code_df_file_path=str(input_file_path.resolve()),
-                                    code_metrics_df_file_path=str(output_file_path.resolve()),
-                                    chunk_size=chunk_size,
-                                    limit_chunk_count=limit_chunk_count)
+        run_code_metrics_extraction(
+            code_df_file_path=str(input_file_path.resolve()),
+            code_metrics_df_file_path=str(output_file_path.resolve()),
+            chunk_size=chunk_size,
+            limit_chunk_count=limit_chunk_count,
+        )
     elif file_type == FileType.markdown:
-        run_markdown_metrics_extraction(markdown_df_file_path=str(input_file_path.resolve()),
-                                        markdown_metrics_df_file_path=str(output_file_path.resolve()),
-                                        chunk_size=chunk_size,
-                                        limit_chunk_count=limit_chunk_count)
-    else:
-        raise typer.BadParameter("Invalid file type.")
+        run_markdown_metrics_extraction(
+            markdown_df_file_path=str(input_file_path.resolve()),
+            markdown_metrics_df_file_path=str(output_file_path.resolve()),
+            chunk_size=chunk_size,
+            limit_chunk_count=limit_chunk_count,
+        )
 
 
 if __name__ == "__main__":
