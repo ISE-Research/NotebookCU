@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from cell_metrics import (extract_code_metrics, extract_markdown_metrics,
                           get_eap_score_dict)
-from config import CHUNK_SIZE
+import config
 from notebook_metrics import get_aggregated_notebook_metrics
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ tqdm.pandas()
 
 
 def extract_cell_data_from_ipynb_file(
-    file_path: str,
+        file_path: str,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     with open(file_path, encoding="utf8") as f:
         data = json.load(f)
@@ -75,12 +75,12 @@ def extract_cell_data_from_ipynb_file(
 
 
 def extract_cell_metrics_from_ipynb_file(
-    file_path: str,
-    base_code_df_file_path: str,
+        file_path: str,
+        base_code_df_file_path: str,
+        chunk_size: int = config.CHUNK_SIZE
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     df_codes, df_markdowns = extract_cell_data_from_ipynb_file(file_path)
-    # TODO: cache result of this function somewhere
-    eap_score_dict = get_eap_score_dict(base_code_df_file_path, chunk_size=CHUNK_SIZE)
+    eap_score_dict = get_eap_score_dict(base_code_df_file_path, chunk_size=chunk_size)
 
     df_codes_metrics: pd.DataFrame = extract_code_metrics(df_codes, eap_score_dict)
     df_markdowns_metrics: pd.DataFrame = extract_markdown_metrics(df_markdowns)
@@ -89,12 +89,14 @@ def extract_cell_metrics_from_ipynb_file(
 
 
 def extract_notebook_metrics_from_ipynb_file(
-    file_path: str, 
-    base_code_df_file_path: str,
+        file_path: str,
+        base_code_df_file_path: str,
+        chunk_size: int = config.CHUNK_SIZE,
 ) -> pd.DataFrame:
     df_codes_metrics, df_markdowns_metrics = extract_cell_metrics_from_ipynb_file(
         file_path,
-        base_code_df_file_path
+        base_code_df_file_path,
+        chunk_size,
     )
     # TODO: standardize column names
     return get_aggregated_notebook_metrics(

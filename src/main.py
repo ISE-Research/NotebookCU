@@ -14,6 +14,7 @@ from classifiers import (
     RandomTreeClassifierCustom,
     XGBoostClassifierCustom,
 )
+from extract_metrics import extract_notebook_metrics_from_ipynb_file
 from logger import init_logger
 from notebook_metrics import aggregate_notebook_metrics
 from process_cell_metrics import run_code_metrics_extraction, run_markdown_metrics_extraction
@@ -43,7 +44,7 @@ class ModelType(str, Enum):
 
 
 @app.command()
-def extract_metrics(
+def extract_dataframe_metrics(
         input_file_path: Annotated[
             Path,
             typer.Argument(help="File to process."),
@@ -206,6 +207,41 @@ def train_model(
     classifier.train(X_train=x_train, y_train=y_train)
     classifier.test(X_test=x_test, y_test=y_test)
     classifier.save_model(str(model_file_path.resolve()))
+
+
+@app.command()
+def extract_notebook_metrics(
+        input_file_path: Annotated[
+            Path,
+            typer.Argument(help="File to process."),
+        ],
+        output_file_path: Annotated[
+            Path,
+            typer.Argument(help="Desired destination path of extracted metrics."),
+        ],
+        base_code_df_file_path: Annotated[
+            Path,
+            typer.Option("--base-code-df", "-bcd",
+                         help="Base code dataframe file to be used for EAP metrics."),
+        ] = Path(config.CODE_DF_FILE_PATH),
+        chunk_size: Annotated[
+            int,
+            typer.Option("--chunk-size", "-cs",
+                         help="Size of chunks for processing the base code df csv."),
+        ] = config.CHUNK_SIZE,
+):
+    extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
+        file_path=str(input_file_path.resolve()),
+        base_code_df_file_path=str(base_code_df_file_path.resolve()),
+        chunk_size=chunk_size
+    )
+    print(extracted_notebook_metrics_df.to_string())
+    if output_file_path.suffix == "csv":
+        extracted_notebook_metrics_df.to_csv(output_file_path)
+    elif output_file_path.suffix == "json":
+        extracted_notebook_metrics_df.iloc[[0]].to_json(orient="records")
+    else:
+        raise typer.BadParameter("Invalid file extension. Only csv and json files supported")
 
 
 if __name__ == "__main__":
