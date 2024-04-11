@@ -190,6 +190,9 @@ def train_model(
         typer.Option("--scores-filters", "-fs", help="Will override filter key."),  # filter scores
     ] = None,
 ):
+    """
+    Train a classifier model to decide if a jupyter notebook file is of high quality or not.
+    """
     model_class = model.get_classifier_class()
     classifier = model_class.get_default_instance()
 
@@ -232,6 +235,9 @@ def extract_notebook_metrics(
         typer.Option("--chunk-size", "-cs", help="Size of chunks for processing the base code df csv."),
     ] = config.CHUNK_SIZE,
 ):
+    """
+    Extract metrics of a jupyter notebook file.
+    """
     extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
         file_path=str(input_file_path.resolve()),
         base_code_df_file_path=str(base_code_df_file_path.resolve()),
@@ -270,6 +276,9 @@ def predict(
         typer.Option("--chunk-size", "-cs", help="Size of chunks for processing the base code df csv."),
     ] = config.CHUNK_SIZE,
 ):
+    """
+    Predict if a jupyter notebook file is high quality based on selected metrics.
+    """
     # TODO: check validity of file type and content before extracting the metrics
     extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
         file_path=str(input_file_path.resolve()),
