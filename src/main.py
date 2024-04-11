@@ -59,8 +59,6 @@ def extract_dataframe_metrics(
         Path,
         typer.Argument(
             help="Desired destination path of extracted metrics.",
-            exists=True,
-            dir_okay=False,
             callback=build_extension_validator([".csv"]),
         ),
     ] = Path(config.CODE_METRICS_DF_FILE_PATH),
