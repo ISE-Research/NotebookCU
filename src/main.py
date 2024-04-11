@@ -153,6 +153,14 @@ def train_model(
         str,
         typer.Option("--selected-score", "-ss"),  # selected score
     ] = "combined_score",
+    split_factor: Annotated[
+        float,
+        typer.Option("--split-factor", "-sf"),
+    ] = 0.7,
+    selection_ratio: Annotated[
+        float,
+        typer.Option("--selection-ratio", "-sr"),
+    ] = 0.25,
     notebook_metrics_filters_key: Annotated[
         str,
         typer.Option(
@@ -197,6 +205,8 @@ def train_model(
         notebook_metrics_filters=notebook_metrics_filters,
         notebook_scores_filters=notebook_scores_filters,
         sort_by=selected_score,
+        split_factor=split_factor,
+        selection_ratio=selection_ratio,
     )
     classifier.train(X_train=x_train, y_train=y_train)
     classifier.test(X_test=x_test, y_test=y_test)

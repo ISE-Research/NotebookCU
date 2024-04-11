@@ -43,12 +43,17 @@ class DataSelector:
         notebook_metrics_filters: list = [],
         notebook_scores_filters: list = [],
         split_factor: float = 0.7,
+        selection_ratio: float = 0.25,
         sort_by: str = config.DEFAULT_NOTEBOOK_SCORES_SORT_BY,
     ):
         features_df = self.apply_filters(self.notebook_metrics_df, notebook_metrics_filters)
         scores_df = self.apply_filters(self.notebook_scores_df, notebook_scores_filters)
         return self._split_data(
-            features_df=features_df, scores_df=scores_df, split_factor=split_factor, sort_by=sort_by
+            features_df=features_df,
+            scores_df=scores_df,
+            split_factor=split_factor,
+            sort_by=sort_by,
+            selection_ratio=selection_ratio,
         )
 
     @staticmethod
@@ -139,6 +144,7 @@ class DataSelector:
         features_df: pd.DataFrame,
         scores_df: pd.DataFrame,
         split_factor: float = 0.7,
+        selection_ratio: float = 0.25,
         sort_by: str = config.DEFAULT_NOTEBOOK_SCORES_SORT_BY,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, list, list]:
         notebooks_sorted_by_score = self._prepare_data(features_df=features_df, scores_df=scores_df, sort_by=sort_by)
@@ -148,8 +154,8 @@ class DataSelector:
         zeros_len = int(split_factor * len(X))
         X["topic_qualities"] = [0 for _ in range(zeros_len)] + [1 for _ in range(len(X) - zeros_len)]
         le = len(X)
-        q1 = int(0.25 * (split_factor) * le)
-        q2 = int(0.25 * (1 - split_factor) * le)
+        q1 = int(selection_ratio * (split_factor) * le)
+        q2 = int(selection_ratio * (1 - split_factor) * le)
 
         X = pd.concat([X.head(q1), X.tail(q2)])
         y = list(X["topic_qualities"])
