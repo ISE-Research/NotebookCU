@@ -147,7 +147,7 @@ def aggregate_notebook_metrics(
     code_df = pd.read_csv(code_metrics_df_file_path)
     markdown_df = pd.read_csv(markdown_metrics_df_file_path)
     user_pt_df = None
-    if user_pt_metrics_df_file_path is not None:    
+    if user_pt_metrics_df_file_path is not None:
         user_pt_df = (
             pd.read_csv(user_pt_metrics_df_file_path)
             .rename(columns={"Id_x": "kernel_id", "PerformanceTier": "PT"})
@@ -160,7 +160,7 @@ def aggregate_notebook_metrics(
         markdown_cell_metrics_df=markdown_df,
         user_pt_df=user_pt_df,
     )
-    
+
     logger.info("Going to save...")
     notebook_metrics_df.info()
     logger.info(f"Shape:{notebook_metrics_df.shape}")

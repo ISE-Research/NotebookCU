@@ -6,8 +6,8 @@ logger_config = {
     "disable_existing_loggers": False,
     "formatters": {
         "standard": {
-            "format": "%(asctime)s [%(levelname)s] %(module)s lineno=%(lineno)d: %(message)s"
-        }
+            "format": "%(asctime)s [%(levelname)s] %(module)s lineno=%(lineno)d: %(message)s",
+        },
     },
     "handlers": {
         "file_handler": {
@@ -32,6 +32,7 @@ logger_config = {
         }
     },
 }
+
 
 def init_logger():
     logging.config.dictConfig(logger_config)

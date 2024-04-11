@@ -1,7 +1,9 @@
 import logging
 import pickle
 from abc import ABC, abstractmethod
+from typing import Union
 
+import numpy as np
 import pandas as pd
 import xgboost as xgb
 from catboost import CatBoostClassifier
@@ -22,30 +24,30 @@ class BaseClassifier(ABC):
         self.model = None
         self.kwargs = kwargs
 
-    def train(self, X_train, y_train):
+    def train(self, X_train: pd.DataFrame, y_train: list) -> None:
         self.model = self.model_class(**self.kwargs)
         self.model.fit(X_train, y_train)
         logger.info(f"{self.__class__.__name__} train finished successfully.")
 
-    def test(self, X_test, y_test):
+    def test(self, X_test: pd.DataFrame, y_test: list) -> None:
         y_pred = self.model.predict(X_test)
         logger.info(classification_report(y_test, y_pred))
         logger.info(f"{self.__class__.__name__} test finished successfully.")
 
-    def predict(self, x):
+    def predict(self, x: Union[pd.DataFrame, np.array]):
         if isinstance(x, pd.DataFrame):
             return self.model.predict(x)
         else:
             return self.model.predict(x.reshape(1, -1))  # Reshape for single prediction
 
-    def save_model(self, path):
+    def save_model(self, path: str) -> None:
         if self.model:
             self.model.save_model(path)
             logger.info("Model saved successfully.")
         else:
             logger.warning("No model trained yet. Cannot save.")
 
-    def load_model(self, path):
+    def load_model(self, path: str) -> None:
         try:
             self.model = self.model_class()
             self.model.load_model(path)
@@ -55,13 +57,13 @@ class BaseClassifier(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_default_instance():
+    def get_default_instance() -> "BaseClassifier":
         pass
 
 
 class BaseClassifierPickleLoader(BaseClassifier, ABC):
 
-    def save_model(self, path):
+    def save_model(self, path: str) -> None:
         if self.model:
             with open(path, "wb") as f:
                 pickle.dump(self.model, f)
@@ -69,7 +71,7 @@ class BaseClassifierPickleLoader(BaseClassifier, ABC):
         else:
             logger.warning("No model trained yet. Cannot save.")
 
-    def load_model(self, path):
+    def load_model(self, path: str) -> "BaseClassifier":
         try:
             with open(path, "rb") as f:
                 self.model = pickle.load(f)
