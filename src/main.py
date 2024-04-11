@@ -1,15 +1,28 @@
-from typing import Union
-
+from logger import init_logger
 from fastapi import FastAPI
+from model_store import ModelStore
+from typing import Dict, Union
 
+init_logger()
+model_store = ModelStore()
 app = FastAPI()
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+@app.get("/models/")
+def get_models() -> Dict[str, Dict[str, Union[str, float]]]:
+    return model_store.active_models
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+@app.post("/notebook/upload/")
+def upload_notebook():
+    pass
+
+
+@app.post("/notebook/metrics/")
+def extract_metrics():
+    pass
+
+
+@app.post("/notebook/predict/")
+def predict():
+    pass
