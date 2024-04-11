@@ -185,7 +185,6 @@ def train_model(
         Path,
         typer.Argument(
             help="Chosen file path to store the created model.",
-            callback=build_extension_validator([".csv"]),
         ),  # destination path
     ] = Path(config.DEFAULT_MODEL_FILE_PATH),
     selected_score: Annotated[
@@ -325,7 +324,7 @@ def predict(
             help="File to process.",
             exists=True,
             dir_okay=False,
-            callback=build_extension_validator([".csv"]),
+            callback=build_extension_validator([".ipynb"]),
         ),
     ],
     model: Annotated[
