@@ -1,5 +1,4 @@
 import logging
-from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -8,40 +7,17 @@ from typing_extensions import Annotated
 
 import config
 from classification_data import DataSelector
-from classifiers import (BaseClassifier, CatBoostClassifierCustom,
-                         DecisionTreeClassifierCustom,
-                         RandomTreeClassifierCustom, XGBoostClassifierCustom)
+from classifiers import BaseClassifier
+from enums import FileType, ModelType
 from extract_metrics import extract_notebook_metrics_from_ipynb_file
 from logger import init_logger
 from notebook_metrics import aggregate_notebook_metrics
-from process_cell_metrics import (run_code_metrics_extraction,
-                                  run_markdown_metrics_extraction)
-from validators import (build_extension_validator,
-                        validate_metrics_filters_key,
-                        validate_scores_filters_key)
+from process_cell_metrics import run_code_metrics_extraction, run_markdown_metrics_extraction
+from validators import build_extension_validator, validate_metrics_filters_key, validate_scores_filters_key
+from model_store import ModelStore
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
-
-
-class FileType(str, Enum):
-    markdown = "markdown"
-    code = "code"
-
-
-class ModelType(str, Enum):
-    cat_boost = "cat_boost"
-    xgb_boost = "xgb_boost"
-    decision_tree = "decision_tree"
-    random_forest = "random_forest"
-
-    def get_classifier_class(self) -> BaseClassifier:
-        return {
-            ModelType.cat_boost: CatBoostClassifierCustom,
-            ModelType.xgb_boost: XGBoostClassifierCustom,
-            ModelType.decision_tree: DecisionTreeClassifierCustom,
-            ModelType.random_forest: RandomTreeClassifierCustom,
-        }.get(self)
 
 
 @app.command()
@@ -262,6 +238,19 @@ def train_model(
     classifier.train(X_train=x_train, y_train=y_train)
     classifier.test(X_test=x_test, y_test=y_test)
     classifier.save_model(str(model_file_path.resolve()))
+
+    model_store = ModelStore()
+    model_store.add_model(
+        file_path=model_file_path,
+        model_type=model,
+        notebook_metrics_df_file_name=notebook_metrics_df_file_path.name,
+        notebook_scores_df_file_path=notebook_scores_df_file_path.name,
+        notebook_metrics_filters=notebook_metrics_filters,
+        notebook_scores_filters=notebook_scores_filters,
+        sort_by=selected_score,
+        split_factor=split_factor,
+        selection_ratio=selection_ratio,
+    )
 
 
 @app.command()
