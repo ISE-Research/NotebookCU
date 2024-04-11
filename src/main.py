@@ -16,6 +16,9 @@ from logger import init_logger
 from notebook_metrics import aggregate_notebook_metrics
 from process_cell_metrics import (run_code_metrics_extraction,
                                   run_markdown_metrics_extraction)
+from validators import (build_extension_validator,
+                        validate_metrics_filters_key,
+                        validate_scores_filters_key)
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
@@ -45,19 +48,35 @@ class ModelType(str, Enum):
 def extract_dataframe_metrics(
     input_file_path: Annotated[
         Path,
-        typer.Argument(help="File to process."),
+        typer.Argument(
+            help="File to process.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = Path(config.CODE_DF_FILE_PATH),
     output_file_path: Annotated[
         Path,
-        typer.Argument(help="Desired destination path of extracted metrics."),
+        typer.Argument(
+            help="Desired destination path of extracted metrics.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = Path(config.CODE_METRICS_DF_FILE_PATH),
     chunk_size: Annotated[
         int,
-        typer.Argument(help="Size of chunks for processing the csv."),
+        typer.Argument(
+            help="Size of chunks for processing the csv.",
+            min=100,
+        ),
     ] = config.CHUNK_SIZE,
     limit_chunk_count: Annotated[
         int,
-        typer.Argument(help="Number of chunks to process (leave as is for no limit)."),
+        typer.Argument(
+            help="Number of chunks to process (leave as is for no limit).",
+            min=-1,
+        ),
     ] = config.LIMIT_CHUNK_COUNT,
     file_type: Annotated[
         FileType,
@@ -89,19 +108,37 @@ def extract_dataframe_metrics(
 def aggregate_metrics(
     code_metrics_df_file_path: Annotated[
         Path,
-        typer.Argument(),
+        typer.Argument(
+            help="File path for code metrics dataframe.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = Path(config.CODE_METRICS_DF_FILE_PATH),
     markdown_metrics_df_file_path: Annotated[
         Path,
-        typer.Argument(),
+        typer.Argument(
+            help="File path for markdown metrics dataframe.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = Path(config.MARKDOWN_METRICS_DF_FILE_PATH),
     notebook_metrics_df_file_path: Annotated[
         Path,
-        typer.Argument(),
+        typer.Argument(
+            help="File path for aggregated metrics dataframe.",
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = Path(config.NOTEBOOK_METRICS_DF_FILE_PATH),
     user_pt_metrics_df_file_path: Annotated[
         Optional[Path],
-        typer.Argument(),
+        typer.Argument(
+            help="File path for PT score.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = None,
 ):
     """
@@ -119,35 +156,39 @@ def aggregate_metrics(
     )
 
 
-def validate_metrics_filters_key(value: str) -> str:
-    if value not in DataSelector.NOTEBOOK_METRICS_FILTERS.keys():
-        raise typer.BadParameter(f"valid options: {', '.join(DataSelector.NOTEBOOK_METRICS_FILTERS.keys())}")
-    return value
-
-
-def validate_scores_filters_key(value: str) -> str:
-    if value not in DataSelector.NOTEBOOK_SCORES_FILTERS.keys():
-        raise typer.BadParameter(f"valid options: {', '.join(DataSelector.NOTEBOOK_SCORES_FILTERS.keys())}")
-    return value
-
-
 @app.command()
 def train_model(
     model: Annotated[
         ModelType,
-        typer.Argument(help=f"Chosen model to be trained."),  # model
+        typer.Argument(
+            help=f"Chosen model to be trained.",
+            case_sensitive=False,
+        ),  # model
     ] = ModelType.cat_boost,
     notebook_metrics_df_file_path: Annotated[
         Path,
-        typer.Argument(help="Chosen metrics file to be used for training the model."),  # features
+        typer.Argument(
+            help="Chosen metrics file to be used for training the model.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),  # features
     ] = Path(config.NOTEBOOK_METRICS_DF_FILE_PATH),
     notebook_scores_df_file_path: Annotated[
         Path,
-        typer.Argument(help="Chosen scores file to be used for training the model."),  # scores
+        typer.Argument(
+            help="Chosen scores file to be used for training the model.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),  # scores
     ] = Path(config.NOTEBOOK_SCORES_DF_FILE_PATH),
     model_file_path: Annotated[
         Path,
-        typer.Argument(help="Chosen file path to store the created model."),  # destination path
+        typer.Argument(
+            help="Chosen file path to store the created model.",
+            callback=build_extension_validator([".csv"]),
+        ),  # destination path
     ] = Path(config.DEFAULT_MODEL_FILE_PATH),
     selected_score: Annotated[
         str,
@@ -155,11 +196,21 @@ def train_model(
     ] = "combined_score",
     split_factor: Annotated[
         float,
-        typer.Option("--split-factor", "-sf"),
+        typer.Option(
+            "--split-factor",
+            "-sf",
+            min=0,
+            max=1,
+        ),
     ] = 0.7,
     selection_ratio: Annotated[
         float,
-        typer.Option("--selection-ratio", "-sr"),
+        typer.Option(
+            "--selection-ratio",
+            "-sr",
+            min=0,
+            max=1,
+        ),
     ] = 0.25,
     notebook_metrics_filters_key: Annotated[
         str,
@@ -220,15 +271,30 @@ def train_model(
 def extract_notebook_metrics(
     input_file_path: Annotated[
         Path,
-        typer.Argument(help="File to process."),
+        typer.Argument(
+            help="File to process.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".ipynb"]),
+        ),
     ],
     output_file_path: Annotated[
         Path,
-        typer.Argument(help="Desired destination path of extracted metrics."),
+        typer.Argument(
+            help="Desired destination path of extracted metrics.",
+            callback=build_extension_validator([".json", ".csv"]),
+        ),
     ],
     base_code_df_file_path: Annotated[
         Path,
-        typer.Option("--base-code-df", "-bcd", help="Base code dataframe file to be used for metrics."),
+        typer.Option(
+            "--base-code-df",
+            "-bcd",
+            help="Base code dataframe file to be used for metrics.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = Path(config.CODE_DF_FILE_PATH),
     chunk_size: Annotated[
         int,
@@ -257,19 +323,38 @@ def extract_notebook_metrics(
 def predict(
     input_file_path: Annotated[
         Path,
-        typer.Argument(help="File to process."),
+        typer.Argument(
+            help="File to process.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ],
     model: Annotated[
         ModelType,
-        typer.Argument(help=f"Chosen model to be trained."),  # model
+        typer.Argument(
+            help=f"Chosen model to be trained.",
+            case_sensitive=False,
+        ),  # model
     ] = ModelType.cat_boost,
     selected_model_path: Annotated[
         Path,
-        typer.Argument(help="Selected classifier model file path."),
+        typer.Argument(
+            help="Selected classifier model file path.",
+            exists=True,
+            dir_okay=False,
+        ),
     ] = Path(config.DEFAULT_MODEL_FILE_PATH),
     base_code_df_file_path: Annotated[
         Path,
-        typer.Option("--base-code-df", "-bcd", help="Base code dataframe file to be used for metrics."),
+        typer.Option(
+            "--base-code-df",
+            "-bcd",
+            help="Base code dataframe file to be used for metrics.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"]),
+        ),
     ] = Path(config.CODE_DF_FILE_PATH),
     chunk_size: Annotated[
         int,
