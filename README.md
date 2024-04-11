@@ -28,7 +28,7 @@ To use the function, you will need certain CSV files containing notebook code an
 ## CLI
 Use below command and start your journey
 ```bash
-python main.py --help
+python cli.py --help
 ```
 Use --help for each command to get further instructions
 
