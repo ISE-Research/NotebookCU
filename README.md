@@ -24,3 +24,11 @@ To use the function, you will need certain CSV files containing notebook code an
 - [models](./models/): Stores the trained models.
 - [logs](./logs/): Keeps the log files.
 - [cache](./cache/): Is used for cached data.
+
+## CLI
+Use below command and start your journey
+```bash
+python main.py --help
+```
+Use --help for each command to get further instructions
+
