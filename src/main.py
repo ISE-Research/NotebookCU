@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
@@ -22,7 +22,7 @@ async def get_models() -> Dict[str, Dict[str, Union[str, float, List[str]]]]:
 
 
 @app.post("/notebook/upload/")
-def upload_notebook(file: Annotated[UploadFile, File(description="Selected jupyter notebook.")]):
+def upload_notebook(file: Annotated[UploadFile, File(description="Selected jupyter notebook.")]) -> Dict[str, str]:
     filename = f"{uuid4().hex}-{file.filename}"
     notebooks_folder_path = Path(config.NOTEBOOKS_FOLDER_PATH)
     filepath = notebooks_folder_path / filename
@@ -39,7 +39,7 @@ class MetricsExtractionInfo(BaseModel):
 
 
 @app.post("/notebook/metrics/")
-def extract_metrics(info: MetricsExtractionInfo):
+def extract_metrics(info: MetricsExtractionInfo) -> Dict[str, Dict[str, Union[int, float]]]:
     file_path = Path(config.NOTEBOOKS_FOLDER_PATH) / info.notebook_filename
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Specified notebook does not exist.")
@@ -62,7 +62,7 @@ class PredictionInfo(MetricsExtractionInfo):
 
 
 @app.post("/notebook/predict/")
-def predict(info: PredictionInfo):
+def predict(info: PredictionInfo) -> Dict[str, Dict[str, Any]]:
     file_path = Path(config.NOTEBOOKS_FOLDER_PATH) / info.notebook_filename
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Specified notebook does not exist.")
