@@ -2,7 +2,7 @@ import json
 import logging
 from hashlib import blake2b
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import config
 from classifiers import BaseClassifier
@@ -73,6 +73,12 @@ class ModelStore:
         }
         self._models_dict.update({self.get_hash_checksum(data=str(model_dict)): model_dict})
         self.save_models_dict()
+
+    def get_model(
+        self,
+        model_id: str,
+    ) -> Optional[BaseClassifier]:
+        return self._models_dict.get(model_id, {}).get("model")
 
     def save_models_dict(self) -> None:
         serializable_models_dict = self.get_serializable_models_dict()
