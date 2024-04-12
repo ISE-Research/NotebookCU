@@ -1,13 +1,12 @@
 import json
 import logging
+from hashlib import blake2b
 from pathlib import Path
 from typing import Any, Dict
 
 import config
 from classifiers import BaseClassifier
 from enums import ModelType
-from hashlib import blake2b
-
 
 logger = logging.getLogger(__name__)
 
