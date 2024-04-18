@@ -8,3 +8,6 @@ numpy
 environs
 isort
 typer
+fastapi
+uvicorn==0.29.0
+python-multipart

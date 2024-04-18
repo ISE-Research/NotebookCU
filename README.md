@@ -26,9 +26,16 @@ To use the function, you will need certain CSV files containing notebook code an
 - [cache](./cache/): Is used for cached data.
 
 ## CLI
-Use below command and start your journey
+First, cd to the src directory and then use below command and start your journey.
 ```bash
-python main.py --help
+python cli.py --help
 ```
-Use --help for each command to get further instructions
+Use --help for each command to get further instructions.
+
+## FastAPI
+First, cd to the src directory and then use below command and start your journey.
+```bash
+uvicorn main:app --reload
+```
+after this you can see the documentation of the apis at http://localhost:8000/docs.
 

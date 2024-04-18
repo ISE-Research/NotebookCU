@@ -14,6 +14,7 @@ DEFAULT_MODEL_FILE_PATH = env.str("DEFAULT_MODEL_FILE_PATH", "../models/model")
 CODE_DF_FILE_PATH = os.path.join(DATAFRAMES_FOLDER_PATH, "code.csv")
 MARKDOWN_DF_FILE_PATH = os.path.join(DATAFRAMES_FOLDER_PATH, "markdown.csv")
 METRICS_FOLDER_PATH = env.str("METRICS_FOLDER_PATH", "../metrics")
+NOTEBOOKS_FOLDER_PATH = env.str("NOTEBOOKS_FOLDER_PATH", "../notebooks")
 CODE_METRICS_DF_FILE_PATH = os.path.join(
     METRICS_FOLDER_PATH, env.str("CODE_METRICS_DF_FILE_NAME", "code_cell_metrics.csv")
 )
@@ -33,3 +34,4 @@ DEFAULT_NOTEBOOK_SCORES_SORT_BY = env.str("DEFAULT_NOTEBOOK_SCORES_SORT_BY", "co
 CACHE_PATH = env.str("CACHE_PATH", "../cache")
 CHUNK_SIZE = env.int("CHUNK_SIZE", 100000)
 LIMIT_CHUNK_COUNT = env.int("LIMIT_CHUNK_COUNT", -1)
+MODELS_DICT_FILE_PATH = env.str("MODELS_DICT_FILE_PATH", "../models/meta.json")
