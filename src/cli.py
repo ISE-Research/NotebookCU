@@ -13,11 +13,8 @@ from extract_metrics import extract_notebook_metrics_from_ipynb_file
 from logger import init_logger
 from model_store import ModelStore
 from notebook_metrics import aggregate_notebook_metrics
-from process_cell_metrics import (run_code_metrics_extraction,
-                                  run_markdown_metrics_extraction)
-from validators import (build_extension_validator,
-                        validate_metrics_filters_key,
-                        validate_scores_filters_key)
+from process_cell_metrics import run_code_metrics_extraction, run_markdown_metrics_extraction
+from validators import build_extension_validator, validate_metrics_filters_key, validate_scores_filters_key
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
@@ -210,12 +207,16 @@ def train_model(
     ] = "default",
     notebook_metrics_filters: Annotated[
         Optional[str],
-        typer.Option("--metrics-filters", "-ff", help="Will override filter key."),  # filter features
+        typer.Option("--metrics-filters", "-ff", help="Will override the corresponding filter key."),  # filter features
     ] = None,
     notebook_scores_filters: Annotated[
         Optional[str],
-        typer.Option("--scores-filters", "-fs", help="Will override filter key."),  # filter scores
+        typer.Option("--scores-filters", "-fs", help="Will override the corresponding filter key."),  # filter scores
     ] = None,
+    include_pt: Annotated[
+        Optional[bool],
+        typer.Option("--include-pt", "-pt", help="Will Use PT score for training the model."),  # Include PT score
+    ] = False,
 ):
     """
     Train a classifier model to decide if a jupyter notebook file is of high quality or not.
@@ -237,6 +238,7 @@ def train_model(
         sort_by=selected_score,
         split_factor=split_factor,
         selection_ratio=selection_ratio,
+        include_pt=include_pt,
     )
     classifier.train(X_train=x_train, y_train=y_train)
     classifier.test(X_test=x_test, y_test=y_test)
@@ -244,7 +246,7 @@ def train_model(
 
     model_store = ModelStore()
     model_store.add_model(
-        file_path=model_file_path,
+        model_file_path=model_file_path,
         model_type=model,
         notebook_metrics_df_file_name=notebook_metrics_df_file_path.name,
         notebook_scores_df_file_path=notebook_scores_df_file_path.name,
@@ -253,6 +255,7 @@ def train_model(
         sort_by=selected_score,
         split_factor=split_factor,
         selection_ratio=selection_ratio,
+        include_pt=include_pt,
     )
 
 
@@ -349,6 +352,10 @@ def predict(
         int,
         typer.Option("--chunk-size", "-cs", help="Size of chunks for processing the base code df csv."),
     ] = config.CHUNK_SIZE,
+    pt_score: Annotated[
+        Optional[int],
+        typer.Option("--pt-score", "-pt", help="PT score (only used when the model needs it)."),
+    ] = None,
 ):
     """
     Predict if a jupyter notebook file is high quality based on selected metrics.
@@ -373,8 +380,9 @@ def predict(
         },
         inplace=True,
     )
-    # TODO: remove PT or take as input
-    extracted_notebook_metrics_df["PT"] = 10
+
+    if pt_score is not None:
+        extracted_notebook_metrics_df["PT"] = pt_score
 
     result = classifier.predict(x=extracted_notebook_metrics_df)
     print(f"result: {result}")

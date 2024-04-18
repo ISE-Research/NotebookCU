@@ -17,7 +17,7 @@ app = FastAPI()
 
 
 @app.get("/models/")
-async def get_models() -> Dict[str, Dict[str, Union[str, float, List[str]]]]:
+async def get_models() -> Dict[str, Dict[str, Union[str, bool, float, List[str]]]]:
     return model_store.active_models
 
 
@@ -59,6 +59,7 @@ def extract_metrics(info: MetricsExtractionInfo) -> Dict[str, Dict[str, Union[in
 
 class PredictionInfo(MetricsExtractionInfo):
     model_id: str
+    pt_score: Optional[int]
 
 
 @app.post("/notebook/predict/")
@@ -89,8 +90,8 @@ def predict(info: PredictionInfo) -> Dict[str, Dict[str, Any]]:
         },
         inplace=True,
     )
-    # TODO: remove PT or take as input
-    extracted_notebook_metrics_df["PT"] = 10
+    if info.pt_score is not None:
+        extracted_notebook_metrics_df["PT"] = 10
 
     result = classifier.predict(x=extracted_notebook_metrics_df)
     return {

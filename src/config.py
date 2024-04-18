@@ -10,7 +10,8 @@ env.read_env()
 
 # Read values from environment variables with defaults
 DATAFRAMES_FOLDER_PATH = env.str("DATAFRAMES_FOLDER_PATH", "../dataframes")
-DEFAULT_MODEL_FILE_PATH = env.str("DEFAULT_MODEL_FILE_PATH", "../models/model")
+MODELS_FOLDER_PATH = env.str("MODELS_FOLDER_PATH", "../models")
+DEFAULT_MODEL_FILE_PATH = env.str("DEFAULT_MODEL_FILE_PATH", f"{MODELS_FOLDER_PATH}/model")
 CODE_DF_FILE_PATH = os.path.join(DATAFRAMES_FOLDER_PATH, "code.csv")
 MARKDOWN_DF_FILE_PATH = os.path.join(DATAFRAMES_FOLDER_PATH, "markdown.csv")
 METRICS_FOLDER_PATH = env.str("METRICS_FOLDER_PATH", "../metrics")
@@ -34,4 +35,4 @@ DEFAULT_NOTEBOOK_SCORES_SORT_BY = env.str("DEFAULT_NOTEBOOK_SCORES_SORT_BY", "co
 CACHE_PATH = env.str("CACHE_PATH", "../cache")
 CHUNK_SIZE = env.int("CHUNK_SIZE", 100000)
 LIMIT_CHUNK_COUNT = env.int("LIMIT_CHUNK_COUNT", -1)
-MODELS_DICT_FILE_PATH = env.str("MODELS_DICT_FILE_PATH", "../models/meta.json")
+MODELS_DICT_FILE_PATH = env.str("MODELS_DICT_FILE_PATH", f"{MODELS_FOLDER_PATH}/meta.json")

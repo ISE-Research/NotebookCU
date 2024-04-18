@@ -47,27 +47,27 @@ class ModelStore:
             if self.get_hash_checksum(str(val)) != key:
                 logger.error(f"Wrong checksum for {key}: {val}.")
                 continue
-            file_path = Path(val["file_path"])
-            if not file_path.exists():
-                logger.error(f"Could not find file_path: {file_path} for model: {key}.")
+            model_file_path = Path(f"{config.MODELS_FOLDER_PATH}/{val['file_name']}")
+            if not model_file_path.exists():
+                logger.error(f"Could not find file_path: {model_file_path} for model: {key}.")
                 continue
-            if not file_path.is_file():
-                logger.error(f"The file_path: {file_path} specified is not for a file, for model: {key}.")
+            if not model_file_path.is_file():
+                logger.error(f"The file_path: {model_file_path} specified is not for a file, for model: {key}.")
                 continue
             model_type = val["model_type"]
             classifier_class = ModelType(model_type).get_classifier_class()
             classifier: BaseClassifier = classifier_class()
-            classifier.load_model(str(file_path.resolve()))
+            classifier.load_model(str(model_file_path.resolve()))
             val["model"] = classifier
 
     def add_model(
         self,
-        file_path: Path,
+        model_file_path: Path,
         model_type: ModelType,
         **kwargs,
     ) -> None:
         model_dict = {
-            "file_path": str(file_path.resolve()),
+            "file_name": model_file_path.name,
             "model_type": model_type.value,
             **kwargs,
         }

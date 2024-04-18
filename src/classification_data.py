@@ -55,10 +55,16 @@ class DataSelector:
         split_factor: float = 0.7,
         selection_ratio: float = 0.25,
         sort_by: str = config.DEFAULT_NOTEBOOK_SCORES_SORT_BY,
+        include_pt: bool = True,
     ):
         features_df = self.apply_filters(self.notebook_metrics_df, notebook_metrics_filters)
         scores_df = self.apply_filters(self.notebook_scores_df, notebook_scores_filters)
-        notebooks_sorted_by_score = self._prepare_data(features_df=features_df, scores_df=scores_df, sort_by=sort_by)
+        notebooks_sorted_by_score = self._prepare_data(
+            features_df=features_df,
+            scores_df=scores_df,
+            sort_by=sort_by,
+            include_pt=include_pt,
+        )
         return self._split_data(
             notebooks_sorted_by_score=notebooks_sorted_by_score,
             split_factor=split_factor,
@@ -127,7 +133,9 @@ class DataSelector:
             df = df.query(filter)
         return df
 
-    def _prepare_data(self, features_df: pd.DataFrame, scores_df: pd.DataFrame, sort_by: str) -> pd.DataFrame:
+    def _prepare_data(
+        self, features_df: pd.DataFrame, scores_df: pd.DataFrame, sort_by: str, include_pt: bool = True
+    ) -> pd.DataFrame:
         logger.info(f"features_df:\n" f"columns: {features_df.columns}\n" f"shape: {features_df.shape}\n")
         logger.info(f"scores_df:\n" f"columns: {scores_df.columns}\n" f"shape: {scores_df.shape}\n")
 
@@ -145,16 +153,19 @@ class DataSelector:
 
         # Drop scores and unique id fields
         merged_df.drop(
-            [
-                "KernelId",
-                "PerformanceTier_kerneluser",
-                "TotalViews",
-                "TotalVotes",
-                "topic_score",
-                "score_scaled",
-                "vote_scaled",
-                "combined_score",
-            ],
+            (
+                [
+                    "KernelId",
+                    "PerformanceTier_kerneluser",
+                    "TotalViews",
+                    "TotalVotes",
+                    "topic_score",
+                    "score_scaled",
+                    "vote_scaled",
+                    "combined_score",
+                ]
+                + ([] if include_pt else ["PT"])
+            ),
             axis=1,
             inplace=True,
         )
