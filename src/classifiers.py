@@ -8,7 +8,7 @@ import pandas as pd
 import xgboost as xgb
 from catboost import CatBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
@@ -29,10 +29,15 @@ class BaseClassifier(ABC):
         self.model.fit(X_train, y_train)
         logger.info(f"{self.__class__.__name__} train finished successfully.")
 
-    def test(self, X_test: pd.DataFrame, y_test: list) -> None:
+    def test(self, X_test: pd.DataFrame, y_test: list) -> dict:
         y_pred = self.model.predict(X_test)
+        roc_auc_score_ = roc_auc_score(y_test, self.model.predict_proba(X_test)[:, 1])
         logger.info(f"\n{classification_report(y_test, y_pred)}")
+        logger.info(f"\nroc_auc_score: {roc_auc_score_}")
         logger.info(f"{self.__class__.__name__} test finished successfully.")
+        report = classification_report(y_test, y_pred, output_dict=True)
+        report.update({"roc_auc_score": roc_auc_score_})
+        return report
 
     def predict(self, x: Union[pd.DataFrame, np.array]):
         if isinstance(x, pd.DataFrame):
