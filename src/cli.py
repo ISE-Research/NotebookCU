@@ -241,7 +241,7 @@ def train_model(
         include_pt=include_pt,
     )
     classifier.train(X_train=x_train, y_train=y_train)
-    report = classifier.test(X_test=x_test, y_test=y_test)
+    metrics = classifier.test(X_test=x_test, y_test=y_test)
     classifier.save_model(str(model_file_path.resolve()))
 
     model_store = ModelStore()
@@ -256,7 +256,7 @@ def train_model(
         split_factor=split_factor,
         selection_ratio=selection_ratio,
         include_pt=include_pt,
-        report=report,
+        metrics=metrics,
     )
 
 

@@ -35,9 +35,9 @@ class BaseClassifier(ABC):
         logger.info(f"\n{classification_report(y_test, y_pred)}")
         logger.info(f"\nroc_auc_score: {roc_auc_score_}")
         logger.info(f"{self.__class__.__name__} test finished successfully.")
-        report = classification_report(y_test, y_pred, output_dict=True)
-        report.update({"roc_auc_score": roc_auc_score_})
-        return report
+        metrics = classification_report(y_test, y_pred, output_dict=True)
+        metrics.update({"roc_auc_score": roc_auc_score_})
+        return metrics
 
     def predict(self, x: Union[pd.DataFrame, np.array]):
         if isinstance(x, pd.DataFrame):
