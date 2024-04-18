@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -89,10 +89,13 @@ class DataSelector:
     def get_experts_test_split(
         self,
         notebook_metrics_filters: list = [],
+        include_pt: bool = True,
     ) -> Tuple[pd.DataFrame, list]:
         if self.experts_scores_df is None:
             raise Exception("set experts_scores_df to get experts test split.")
         features_df = self.apply_filters(self.notebook_metrics_df, notebook_metrics_filters)
+        if not include_pt:
+            features_df.drop(columns=["PT"], inplace=True)
         merged_df = pd.merge(self.experts_scores_df, features_df, on="KernelId", how="inner")
         ones = merged_df[merged_df["expert_score"] == 1]
         zeros = merged_df[merged_df["expert_score"] == 0]
