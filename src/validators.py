@@ -8,8 +8,11 @@ from classification_data import DataSelector
 
 def build_extension_validator(
     valid_extensions: List[str],
+    nullable: bool = False,
 ):
     def validate_extension(value: Path) -> Path:
+        if nullable and value is None:
+            return value        
         extension = value.suffix.lower()
         if extension not in valid_extensions:
             raise typer.BadParameter(

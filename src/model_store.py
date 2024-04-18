@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class ModelStore:
+    CHECKSUM_EXCLUDED_KEYS = ["metrics"]
+
     def __init__(self, models_dict_file_path: str = config.MODELS_DICT_FILE_PATH):
         self._models_dict_file_path: str = models_dict_file_path
         self._models_dict: Dict[str, Dict[str, Any]]
@@ -44,7 +46,7 @@ class ModelStore:
 
     def load_models_dict_models(self) -> None:
         for key, val in self._models_dict.items():
-            if self.get_hash_checksum(str(val)) != key:
+            if self.get_hash_checksum(val) != key:
                 logger.error(f"Wrong checksum for {key}: {val}.")
                 continue
             model_file_path = Path(f"{config.MODELS_FOLDER_PATH}/{val['file_name']}")
@@ -71,7 +73,7 @@ class ModelStore:
             "model_type": model_type.value,
             **kwargs,
         }
-        self._models_dict.update({self.get_hash_checksum(data=str(model_dict)): model_dict})
+        self._models_dict.update({self.get_hash_checksum(data=model_dict): model_dict})
         self.save_models_dict()
 
     def get_model(
@@ -96,11 +98,12 @@ class ModelStore:
         with open(str(file_path.resolve()), "w") as file:
             file.write(json.dumps(serializable_models_dict, indent=4))
 
-    @staticmethod
     def get_hash_checksum(
-        data: str,
-        digest_size: int = 8,
+        self,
+        data: dict,
+        digest_size: int = config.DEFAULT_DIGEST_SIZE_FOR_MODEL_KEYS,
     ) -> str:
+        data_str = str({key: val for key, val in data.items() if key not in self.CHECKSUM_EXCLUDED_KEYS})
         hasher = blake2b(digest_size=digest_size)
-        hasher.update(data.encode())
+        hasher.update(data_str.encode())
         return hasher.hexdigest()

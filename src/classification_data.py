@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple
+from typing import Tuple, Optional
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -30,7 +30,12 @@ class DataSelector:
         ],
     }
 
-    def __init__(self, notebook_metrics_df_file_path: str, notebook_scores_df_file_path: str):
+    def __init__(
+        self,
+        notebook_metrics_df_file_path: str,
+        notebook_scores_df_file_path: str,
+        expert_scores_df_file_path: Optional[str],
+    ):
         logger.info("Going to load features and scores...")
         self.notebook_metrics_df = pd.read_csv(notebook_metrics_df_file_path, low_memory=False)
         logger.info(
@@ -44,9 +49,19 @@ class DataSelector:
             f"columns: {self.notebook_scores_df.columns}\n"
             f"shape: {self.notebook_scores_df.shape}\n"
         )
+        self.experts_scores_df = None
+        if expert_scores_df_file_path is not None:
+            self.experts_scores_df = pd.read_csv(expert_scores_df_file_path)
+            logger.info(
+                f"self.experts_scores_df:\n"
+                f"columns: {self.experts_scores_df.columns}\n"
+                f"shape: {self.experts_scores_df.shape}\n"
+            )
         logger.info("Loaded features and scores successfully.")
-        self.clean_notebook_metrics_df()
-        self.clean_notebook_scores_df()
+        self._clean_notebook_metrics_df()
+        self._clean_notebook_scores_df()
+        if self.experts_scores_df is not None:
+            self._clean_experts_scores_df()
 
     def get_train_test_split(
         self,
@@ -56,7 +71,7 @@ class DataSelector:
         selection_ratio: float = 0.25,
         sort_by: str = config.DEFAULT_NOTEBOOK_SCORES_SORT_BY,
         include_pt: bool = True,
-    ):
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, list, list]:
         features_df = self.apply_filters(self.notebook_metrics_df, notebook_metrics_filters)
         scores_df = self.apply_filters(self.notebook_scores_df, notebook_scores_filters)
         notebooks_sorted_by_score = self._prepare_data(
@@ -71,7 +86,30 @@ class DataSelector:
             selection_ratio=selection_ratio,
         )
 
-    def clean_notebook_metrics_df(self):
+    def get_experts_test_split(
+        self,
+        notebook_metrics_filters: list = [],
+    ) -> Tuple[pd.DataFrame, list]:
+        if self.experts_scores_df is None:
+            raise Exception("set experts_scores_df to get experts test split.")
+        features_df = self.apply_filters(self.notebook_metrics_df, notebook_metrics_filters)
+        merged_df = pd.merge(self.experts_scores_df, features_df, on="KernelId", how="inner")
+        ones = merged_df[merged_df["expert_score"] == 1]
+        zeros = merged_df[merged_df["expert_score"] == 0]
+        min_len = min(len(ones), len(zeros))
+        X = pd.concat([zeros.head(min_len), ones.head(min_len)])
+        X.drop(["KernelId"], axis=1, inplace=True)
+        X.rename(
+            columns={
+                "ALLC": "ALLCL",
+            },
+            inplace=True,
+        )
+        X_test_experts = X.drop(["expert_score"], axis=1)
+        y_test_experts = list(X["expert_score"])
+        return X_test_experts, y_test_experts
+
+    def _clean_notebook_metrics_df(self) -> None:
         logger.info("Going to clean self.notebook_metrics_df...")
         logger.info(
             f"self.notebook_metrics_df:\n"
@@ -80,11 +118,13 @@ class DataSelector:
             f"dtypes: {self.notebook_metrics_df.dtypes}\n"
         )
         self.notebook_metrics_df.drop_duplicates(inplace=True)
-        numeric_columns = self.notebook_metrics_df.columns
+        numeric_columns = list(self.notebook_metrics_df.columns)
+        numeric_columns.remove("kernel_id")
         self.notebook_metrics_df[numeric_columns] = self.notebook_metrics_df[numeric_columns].apply(
             pd.to_numeric, errors="coerce"
         )
         self.notebook_metrics_df.dropna(inplace=True)
+        self.notebook_metrics_df.rename(columns={"kernel_id": "KernelId"}, inplace=True)
         logger.info("Cleaned self.notebook_scores_df.")
         logger.info(
             f"self.notebook_metrics_df:\n"
@@ -93,7 +133,7 @@ class DataSelector:
             f"dtypes: {self.notebook_metrics_df.dtypes}\n"
         )
 
-    def clean_notebook_scores_df(self):
+    def _clean_notebook_scores_df(self) -> None:
         logger.info("Going to clean self.notebook_scores_df...")
         logger.info(
             f"self.notebook_scores_df:\n"
@@ -127,6 +167,34 @@ class DataSelector:
             f"dtypes: {self.notebook_scores_df.dtypes}\n"
         )
 
+    def _clean_experts_scores_df(self) -> None:
+        logger.info("Going to clean self.experts_scores_df...")
+        logger.info(
+            f"self.experts_scores_df:\n"
+            f"columns: {self.experts_scores_df.columns}\n"
+            f"shape: {self.experts_scores_df.shape}\n"
+            f"dtypes: {self.experts_scores_df.dtypes}\n"
+        )
+        self.experts_scores_df = self.experts_scores_df[
+            [
+                "KernelId",
+                "expert_score",
+            ]
+        ]
+        self.experts_scores_df.drop_duplicates(inplace=True)
+        numeric_columns = ["expert_score"]
+        self.experts_scores_df[numeric_columns] = self.experts_scores_df[numeric_columns].apply(
+            pd.to_numeric, errors="coerce"
+        )
+        self.experts_scores_df.dropna(subset=numeric_columns, inplace=True)
+        logger.info("Cleaned self.experts_scores_df.")
+        logger.info(
+            f"self.experts_scores_df:\n"
+            f"columns: {self.experts_scores_df.columns}\n"
+            f"shape: {self.experts_scores_df.shape}\n"
+            f"dtypes: {self.experts_scores_df.dtypes}\n"
+        )
+
     @staticmethod
     def apply_filters(df: pd.DataFrame, filters: list) -> pd.DataFrame:
         for filter in filters:
@@ -143,7 +211,7 @@ class DataSelector:
 
         merged_df = pd.merge(
             scores_df,
-            features_df.rename(columns={"kernel_id": "KernelId"}),
+            features_df,
             on="KernelId",
             how="inner",
         )
@@ -173,24 +241,7 @@ class DataSelector:
         # TODO: standardize column names
         merged_df.rename(
             columns={
-                "LOCOM": "LOCom",
                 "ALLC": "ALLCL",
-                "NOI": "I",
-                "MedLC": "MedLCC",
-                "MeanLC": "MeanLCC",
-                "BLOC": "BLC",
-                "NOEH": "EH",
-                "NExR": "NEC",
-                "MedLMD": "MedLMC",
-                "MeanLMD": "MeanLMC",
-                "visulization": "VF",
-                "BLOMD": "BLM",
-                "MCEL": "MC",
-                "DeF": "UDF",
-                "WOMD": "MeanWMC",
-                "CCEL": "CC",
-                "output_stream_len": "OSL",
-                "NDD": "NVD",
             },
             inplace=True,
         )

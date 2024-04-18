@@ -167,6 +167,17 @@ def train_model(
         str,
         typer.Option("--selected-score", "-ss"),  # selected score
     ] = "combined_score",
+    experts_scores_df_file_path: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--experts-scores",
+            "-es",
+            help="Chosen experts scores file to be used for testing the model.",
+            exists=True,
+            dir_okay=False,
+            callback=build_extension_validator([".csv"], nullable=True),
+        ),  # experts score
+    ] = None,
     split_factor: Annotated[
         float,
         typer.Option(
@@ -174,6 +185,7 @@ def train_model(
             "-sf",
             min=0,
             max=1,
+            help="Determines the quality threshold for splitting the dataset sorted by scores.",
         ),
     ] = 0.7,
     selection_ratio: Annotated[
@@ -183,6 +195,7 @@ def train_model(
             "-sr",
             min=0,
             max=1,
+            help="Decides what ratio of each split partakes in the training."
         ),
     ] = 0.25,
     notebook_metrics_filters_key: Annotated[
@@ -191,7 +204,7 @@ def train_model(
             "--metrics-filters-key",
             "-ffk",  # filter features key
             callback=validate_metrics_filters_key,
-            help=f"Predefined key to filter notebook metrics based "
+            help=f"Predefined key to filter notebook metrics "
             f"(valid options: {', '.join(DataSelector.NOTEBOOK_METRICS_FILTERS.keys())})",
         ),
     ] = "default",
@@ -201,7 +214,7 @@ def train_model(
             "--scores-filters-key",
             "-fsk",  # filter scores key
             callback=validate_scores_filters_key,
-            help=f"Predefined key to filter notebook metrics based "
+            help=f"Predefined key to filter notebook scores "
             f"(valid options: {', '.join(DataSelector.NOTEBOOK_SCORES_FILTERS.keys())})",
         ),
     ] = "default",
@@ -229,10 +242,13 @@ def train_model(
     if notebook_scores_filters is None:
         notebook_scores_filters = DataSelector.NOTEBOOK_SCORES_FILTERS[notebook_scores_filters_key]
 
-    x_train, x_test, y_train, y_test = DataSelector(
+    data_selector = DataSelector(
         notebook_metrics_df_file_path=str(notebook_metrics_df_file_path.resolve()),
         notebook_scores_df_file_path=str(notebook_scores_df_file_path.resolve()),
-    ).get_train_test_split(
+        expert_scores_df_file_path=str(experts_scores_df_file_path.resolve()) if experts_scores_df_file_path else None,
+    )
+
+    x_train, x_test, y_train, y_test = data_selector.get_train_test_split(
         notebook_metrics_filters=notebook_metrics_filters,
         notebook_scores_filters=notebook_scores_filters,
         sort_by=selected_score,
@@ -241,7 +257,15 @@ def train_model(
         include_pt=include_pt,
     )
     classifier.train(X_train=x_train, y_train=y_train)
-    metrics = classifier.test(X_test=x_test, y_test=y_test)
+    metrics = {"default": None, "experts": None}
+    metrics["default"] = classifier.test(X_test=x_test, y_test=y_test)
+
+    if experts_scores_df_file_path is not None:
+        x_test_experts, y_test_experts = data_selector.get_experts_test_split(
+            notebook_metrics_filters=notebook_metrics_filters,
+        )
+        metrics["experts"] = classifier.test(X_test=x_test_experts, y_test=y_test_experts)
+
     classifier.save_model(str(model_file_path.resolve()))
 
     model_store = ModelStore()
