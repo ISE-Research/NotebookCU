@@ -31,7 +31,7 @@ class BaseClassifier(ABC):
 
     def test(self, X_test: pd.DataFrame, y_test: list) -> None:
         y_pred = self.model.predict(X_test)
-        logger.info(classification_report(y_test, y_pred))
+        logger.info(f"\n{classification_report(y_test, y_pred)}")
         logger.info(f"{self.__class__.__name__} test finished successfully.")
 
     def predict(self, x: Union[pd.DataFrame, np.array]):
