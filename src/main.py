@@ -17,7 +17,7 @@ app = FastAPI()
 
 
 @app.get("/models/")
-async def get_models() -> Dict[str, Dict[str, Union[str, bool, float, List[str]]]]:
+async def get_models() -> Dict[str, Dict[str, Any]]:
     return model_store.active_models
 
 
