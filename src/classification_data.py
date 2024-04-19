@@ -94,9 +94,9 @@ class DataSelector:
         if self.experts_scores_df is None:
             raise Exception("set experts_scores_df to get experts test split.")
         features_df = self.apply_filters(self.notebook_metrics_df, notebook_metrics_filters)
-        if not include_pt:
-            features_df.drop(columns=["PT"], inplace=True)
         merged_df = pd.merge(self.experts_scores_df, features_df, on="KernelId", how="inner")
+        if not include_pt:
+            merged_df.drop(columns=["PT"], axis=1, inplace=True)
         ones = merged_df[merged_df["expert_score"] == 1]
         zeros = merged_df[merged_df["expert_score"] == 0]
         min_len = min(len(ones), len(zeros))
@@ -200,6 +200,7 @@ class DataSelector:
 
     @staticmethod
     def apply_filters(df: pd.DataFrame, filters: list) -> pd.DataFrame:
+        df = df.copy()
         for filter in filters:
             df = df.query(filter)
         return df
