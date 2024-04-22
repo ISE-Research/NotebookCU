@@ -288,6 +288,8 @@ def predict(info: PredictionInfo) -> PredictionResponse:
         inplace=True,
     )
     if info.pt_score is not None:
+        if not model_store.get_model_info(info.model_id).get("include_pt"):
+            raise Exception(status_code=400, detail="Specified model does not take PT score.")
         extracted_notebook_metrics_df["PT"] = info.pt_score
 
     result = classifier.predict(x=extracted_notebook_metrics_df)

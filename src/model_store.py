@@ -80,7 +80,13 @@ class ModelStore:
         self,
         model_id: str,
     ) -> Optional[BaseClassifier]:
-        return self._models_dict.get(model_id, {}).get("model")
+        return self.get_model_info(model_id=model_id).get("model")
+
+    def get_model_info(
+        self,
+        model_id: str,
+    ) -> Dict[str, Any]:
+        return self._models_dict.get(model_id, {})
 
     def save_models_dict(self) -> None:
         serializable_models_dict = self.get_serializable_models_dict()
