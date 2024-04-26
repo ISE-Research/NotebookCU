@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
 import utils.config as config
-from core.enums import ModelType
+from core.enums import ClassifierType
 from core.extract_metrics import extract_notebook_metrics_from_ipynb_file
 from core.model_store import ModelStore
 from utils.logger import init_logger
@@ -47,7 +47,7 @@ app = FastAPI(
 class ModelInfo(BaseModel):
     id: str
     file_name: str
-    model_type: str
+    classifier: str
     notebook_metrics_df_file_name: str
     notebook_scores_df_file_path: str
     notebook_metrics_filters: List[str]
@@ -65,12 +65,12 @@ class ModelInfo(BaseModel):
     response_model=List[ModelInfo],
 )
 async def get_models(
-    model_type: Annotated[
-        Union[ModelType, None],
+    classifier: Annotated[
+        Union[ClassifierType, None],
         Query(
             max_length=50,
-            description=f"Filter by type of model class can be one of {[model.value for model in ModelType]}.",
-            example=ModelType.cat_boost,
+            description=f"Filter by type of model class can be one of {[model.value for model in ClassifierType]}.",
+            example=ClassifierType.cat_boost,
         ),
     ] = None,
 ) -> List[ModelInfo]:
@@ -82,11 +82,11 @@ async def get_models(
     """
     active_models = model_store.active_models
 
-    if model_type is not None:
+    if classifier is not None:
         active_models = {
             key: {inner_key: inner_val for inner_key, inner_val in inner_dict.items()}
             for key, inner_dict in active_models.items()
-            if inner_dict["model_type"] == model_type
+            if inner_dict["classifier"] == classifier
         }
 
     return [ModelInfo(id=id_, **model_detail) for id_, model_detail in active_models.items()]

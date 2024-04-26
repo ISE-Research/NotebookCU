@@ -9,16 +9,13 @@ from typing_extensions import Annotated
 import utils.config as config
 from core.classification_data import DataSelector
 from core.classifiers import BaseClassifier
-from core.enums import FileType, ModelType
+from core.enums import FileType, ClassifierType
 from core.extract_metrics import extract_notebook_metrics_from_ipynb_file
 from core.model_store import ModelStore
 from core.notebook_metrics import aggregate_notebook_metrics
-from core.process_cell_metrics import (run_code_metrics_extraction,
-                                       run_markdown_metrics_extraction)
+from core.process_cell_metrics import run_code_metrics_extraction, run_markdown_metrics_extraction
 from utils.logger import init_logger
-from utils.validators import (build_extension_validator,
-                              validate_metrics_filters_key,
-                              validate_scores_filters_key)
+from utils.validators import build_extension_validator, validate_metrics_filters_key, validate_scores_filters_key
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
@@ -141,12 +138,12 @@ def aggregate_metrics(
 @app.command()
 def train_model(
     model: Annotated[
-        ModelType,
+        ClassifierType,
         typer.Argument(
             help=f"Chosen model to be trained.",
             case_sensitive=False,
         ),  # model
-    ] = ModelType.cat_boost,
+    ] = ClassifierType.cat_boost,
     notebook_metrics_df_file_path: Annotated[
         Path,
         typer.Argument(
@@ -276,7 +273,7 @@ def train_model(
     model_store = ModelStore()
     model_store.add_model(
         model_file_path=model_file_path,
-        model_type=model,
+        classifier=model,
         notebook_metrics_df_file_name=notebook_metrics_df_file_path.name,
         notebook_scores_df_file_path=notebook_scores_df_file_path.name,
         notebook_metrics_filters=notebook_metrics_filters,
@@ -359,12 +356,12 @@ def predict(
         ),
     ],
     model: Annotated[
-        ModelType,
+        ClassifierType,
         typer.Argument(
             help=f"Chosen model to be trained.",
             case_sensitive=False,
         ),  # model
-    ] = ModelType.cat_boost,
+    ] = ClassifierType.cat_boost,
     selected_model_path: Annotated[
         Path,
         typer.Argument(
