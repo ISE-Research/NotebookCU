@@ -9,7 +9,7 @@ from typing_extensions import Annotated
 import utils.config as config
 from core.classification_data import DataSelector
 from core.classifiers import BaseClassifier
-from core.enums import FileType, ClassifierType
+from core.enums import ClassifierType, FileType
 from core.extract_metrics import extract_notebook_metrics_from_ipynb_file
 from core.model_store import ModelStore
 from core.notebook_metrics import aggregate_notebook_metrics
