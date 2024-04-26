@@ -80,9 +80,9 @@ class BaseClassifierPickleLoader(BaseClassifier, ABC):
         try:
             with open(path, "rb") as f:
                 self.model = pickle.load(f)
-            logger.info("Model loaded successfully.")
+            logger.info(f"Model {path} loaded successfully.")
         except FileNotFoundError:
-            logger.error("Model file not found.")
+            logger.error(f"Model {path} file not found.")
 
 
 class CatBoostClassifierCustom(BaseClassifier):
