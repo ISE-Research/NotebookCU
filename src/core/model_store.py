@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 import utils.config as config
 from core.classifiers import BaseClassifier
-from core.enums import ModelType
+from core.enums import ClassifierType
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,8 @@ class ModelStore:
             if not model_file_path.is_file():
                 logger.error(f"The file_path: {model_file_path} specified is not for a file, for model: {key}.")
                 continue
-            model_type = val["model_type"]
-            classifier_class = ModelType(model_type).get_classifier_class()
+            classifier = val["classifier"]
+            classifier_class = ClassifierType(classifier).get_classifier_class()
             classifier: BaseClassifier = classifier_class()
             classifier.load_model(str(model_file_path.resolve()))
             val["model"] = classifier
@@ -65,12 +65,12 @@ class ModelStore:
     def add_model(
         self,
         model_file_path: Path,
-        model_type: ModelType,
+        classifier: ClassifierType,
         **kwargs,
     ) -> None:
         model_dict = {
             "file_name": model_file_path.name,
-            "model_type": model_type.value,
+            "classifier": classifier.value,
             **kwargs,
         }
         self._models_dict.update({self.get_hash_checksum(data=model_dict): model_dict})

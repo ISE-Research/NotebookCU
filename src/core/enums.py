@@ -14,7 +14,7 @@ class FileType(str, Enum):
     code = "code"
 
 
-class ModelType(str, Enum):
+class ClassifierType(str, Enum):
     cat_boost = "cat_boost"
     xg_boost = "xg_boost"
     decision_tree = "decision_tree"
@@ -22,8 +22,8 @@ class ModelType(str, Enum):
 
     def get_classifier_class(self) -> BaseClassifier:
         return {
-            ModelType.cat_boost: CatBoostClassifierCustom,
-            ModelType.xg_boost: XGBoostClassifierCustom,
-            ModelType.decision_tree: DecisionTreeClassifierCustom,
-            ModelType.random_forest: RandomTreeClassifierCustom,
+            ClassifierType.cat_boost: CatBoostClassifierCustom,
+            ClassifierType.xg_boost: XGBoostClassifierCustom,
+            ClassifierType.decision_tree: DecisionTreeClassifierCustom,
+            ClassifierType.random_forest: RandomTreeClassifierCustom,
         }.get(self)
