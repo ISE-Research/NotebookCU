@@ -1,9 +1,10 @@
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing_extensions import Annotated
 
 import utils.config as config
@@ -13,6 +14,9 @@ from core.model_store import ModelStore
 from utils.logger import init_logger
 
 init_logger()
+
+logger = logging.getLogger(__name__)
+
 model_store = ModelStore()
 
 
@@ -135,6 +139,18 @@ class MetricsExtractionInfo(BaseModel):
     )
     chunk_size: Optional[int] = Field(default=config.CHUNK_SIZE, examples=[config.CHUNK_SIZE])
 
+    @field_validator("notebook_filename", mode="before")
+    def validate_filename(cls, v: str):
+        if "/" in v or "\\" in v or ".." in v:
+            raise ValueError("Filename cannot contain path components or '..'. Rename your file and try again.")
+        if not v.endswith(".ipynb"):
+            raise ValueError("Filename must end with the '.ipynb' extension")
+        expected_parent = Path(config.NOTEBOOKS_FOLDER_PATH)
+        file_path = expected_parent / v
+        if file_path.parent != expected_parent:
+            raise ValueError("Filename must not change the parent folder path.")
+        return v
+
 
 class MetricsExtractionResponse(BaseModel):
     metrics: Dict[str, Union[int, float]] = Field(
@@ -202,11 +218,19 @@ def extract_metrics(info: MetricsExtractionInfo) -> MetricsExtractionResponse:
     if not base_code_df_file_path.is_file():
         raise HTTPException(status_code=404, detail="Specified code df does not exist.")
 
-    extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
-        file_path=str(file_path.resolve()),
-        base_code_df_file_path=str(base_code_df_file_path.resolve()),
-        chunk_size=info.chunk_size,
-    )
+    try:
+        extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
+            file_path=str(file_path.resolve()),
+            base_code_df_file_path=str(base_code_df_file_path.resolve()),
+            chunk_size=info.chunk_size,
+        )
+    except Exception as exc:
+        logger.error(f"Exception on extracting notebook metrics: {exc}")
+        raise HTTPException(status_code=400, detail="Could not extract the metrics from the provided notebook.")
+
+    if len(extracted_notebook_metrics_df) != 1:
+        raise HTTPException(status_code=404, detail="Notebook file is empty (No metrics were extracted).")
+
     extracted_notebook_metrics_df.drop(["kernel_id"], axis=1, inplace=True)
     return MetricsExtractionResponse(metrics=extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0])
 
@@ -245,13 +269,20 @@ def predict(info: PredictionInfo) -> PredictionResponse:
     if not base_code_df_file_path.is_file():
         raise HTTPException(status_code=404, detail="Specified code df does not exist.")
 
-    extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
-        file_path=str(file_path.resolve()),
-        base_code_df_file_path=str(base_code_df_file_path.resolve()),
-        chunk_size=info.chunk_size,
-    )
-    extracted_notebook_metrics_df.drop(["kernel_id"], axis=1, inplace=True)
+    try:
+        extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
+            file_path=str(file_path.resolve()),
+            base_code_df_file_path=str(base_code_df_file_path.resolve()),
+            chunk_size=info.chunk_size,
+        )
+    except Exception as exc:
+        logger.error(f"Exception on extracting notebook metrics: {exc}")
+        raise HTTPException(status_code=400, detail="Could not extract the metrics from the provided notebook.")
 
+    if len(extracted_notebook_metrics_df) != 1:
+        raise HTTPException(status_code=404, detail="Notebook file is empty (No metrics were extracted).")
+
+    extracted_notebook_metrics_df.drop(["kernel_id"], axis=1, inplace=True)
     classifier = model_store.get_model(info.model_id)
     if classifier is None:
         raise HTTPException(status_code=404, detail="Specified model id does not exist.")
