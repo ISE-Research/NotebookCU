@@ -48,7 +48,7 @@ class BaseClassifier(ABC):
     def save_model(self, path: str) -> None:
         if self.model:
             self.model.save_model(path)
-            logger.info("Model saved successfully.")
+            logger.info(f"Model {path} saved successfully.")
         else:
             logger.warning("No model trained yet. Cannot save.")
 
@@ -56,9 +56,9 @@ class BaseClassifier(ABC):
         try:
             self.model = self.model_class()
             self.model.load_model(path)
-            logger.info("Model loaded successfully.")
+            logger.info(f"Model {path} loaded successfully.")
         except FileNotFoundError:
-            logger.error("Model file not found.")
+            logger.error(f"Model {path} file not found.")
 
     @staticmethod
     @abstractmethod
