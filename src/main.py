@@ -1,12 +1,13 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 from uuid import uuid4
 
-from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
 import utils.config as config
+from core.enums import ModelType
 from core.extract_metrics import extract_notebook_metrics_from_ipynb_file
 from core.model_store import ModelStore
 from utils.logger import init_logger
@@ -63,18 +64,36 @@ class ModelInfo(BaseModel):
     summary="Get a list of available models.",
     response_model=List[ModelInfo],
 )
-async def get_models() -> List[ModelInfo]:
+async def get_models(
+    model_type: Annotated[
+        Union[ModelType, None],
+        Query(
+            max_length=50,
+            description=f"Filter by type of model class can be one of {[model.value for model in ModelType]}.",
+            example=ModelType.cat_boost,
+        ),
+    ] = None,
+) -> List[ModelInfo]:
     """
     This function retrieves information about the currently active models.
 
     Returns:
         A list containing information about active models.
     """
-    return [ModelInfo(id=model_id, **model_detail) for model_id, model_detail in model_store.active_models.items()]
+    active_models = model_store.active_models
+
+    if model_type is not None:
+        active_models = {
+            key: {inner_key: inner_val for inner_key, inner_val in inner_dict.items()}
+            for key, inner_dict in active_models.items()
+            if inner_dict["model_type"] == model_type
+        }
+
+    return [ModelInfo(id=id_, **model_detail) for id_, model_detail in active_models.items()]
 
 
 class UploadNotebookResponse(BaseModel):
-    message: str = Field(examples=["c744d10c6a2d4ec49cd30f69b8301da3-14091946.ipynb"])
+    result: str = Field(examples=["c744d10c6a2d4ec49cd30f69b8301da3-14091946.ipynb"])
 
 
 @app.post(
@@ -98,7 +117,7 @@ def upload_notebook(
         file: The Jupyter notebook file to be uploaded.
 
     Returns:
-        Dict[str, str]: A dictionary containing a message with the generated filename.
+        A dictionary containing a message with the generated filename.
     """
     filename = f"{uuid4().hex}-{file.filename}"
     notebooks_folder_path = Path(config.NOTEBOOKS_FOLDER_PATH)
@@ -106,7 +125,7 @@ def upload_notebook(
     with open(filepath, "wb") as buffer:
         buffer.write(file.file.read())
     file.file.close()
-    return UploadNotebookResponse(message=filename)
+    return UploadNotebookResponse(result=filename)
 
 
 class MetricsExtractionInfo(BaseModel):
@@ -118,7 +137,7 @@ class MetricsExtractionInfo(BaseModel):
 
 
 class MetricsExtractionResponse(BaseModel):
-    message: Dict[str, Union[int, float]] = Field(
+    metrics: Dict[str, Union[int, float]] = Field(
         examples=[
             {
                 "LOC": 78,
@@ -189,7 +208,7 @@ def extract_metrics(info: MetricsExtractionInfo) -> MetricsExtractionResponse:
         chunk_size=info.chunk_size,
     )
     extracted_notebook_metrics_df.drop(["kernel_id"], axis=1, inplace=True)
-    return MetricsExtractionResponse(message=extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0])
+    return MetricsExtractionResponse(metrics=extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0])
 
 
 class PredictionInfo(MetricsExtractionInfo):
@@ -199,51 +218,8 @@ class PredictionInfo(MetricsExtractionInfo):
     )
 
 
-class PredictionResponse(BaseModel):
-    message: Dict[str, Any] = Field(
-        examples=[
-            {
-                "metrics": {
-                    "LOC": 78,
-                    "BLC": 0,
-                    "UDF": 3,
-                    "I": 6,
-                    "EH": 0,
-                    "NVD": 3,
-                    "NEC": 1,
-                    "S": 17,
-                    "P": 82,
-                    "OPRND": 193,
-                    "OPRATOR": 93,
-                    "UOPRND": 185,
-                    "UOPRATOR": 29,
-                    "ID": 428,
-                    "LOCom": 16,
-                    "EAP": 2.3896513096876997,
-                    "CW": 114,
-                    "ALID": 6.9,
-                    "MeanLCC": 7.8,
-                    "ALLCL": 38.947288006111535,
-                    "KLCID": 4.522916666666666,
-                    "CyC": 1.2,
-                    "MLID": 25,
-                    "NBD": 10.363636363636363,
-                    "AID": 118,
-                    "CC": 10,
-                    "MC": 11,
-                    "MeanWMC": 19.90909090909091,
-                    "MeanLMC": 1.3636363636363635,
-                    "H1": 0,
-                    "H2": 3,
-                    "H3": 1,
-                    "MW": 219,
-                    "LMC": 15,
-                    "PT": 10,
-                },
-                "prediction": 0,
-            }
-        ]
-    )
+class PredictionResponse(MetricsExtractionResponse):
+    prediction: int = Field(examples=[0, 1])
 
 
 @app.post(
@@ -294,10 +270,8 @@ def predict(info: PredictionInfo) -> PredictionResponse:
 
     result = classifier.predict(x=extracted_notebook_metrics_df)
     return PredictionResponse(
-        message={
-            "metrics": extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0],
-            "prediction": int(result[0]),
-        }
+        metrics=extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0],
+        prediction=int(result[0]),
     )
 
 
