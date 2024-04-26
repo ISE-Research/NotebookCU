@@ -123,13 +123,22 @@ def get_aggregated_notebook_metrics(
     code_cell_metrics_df: pd.DataFrame,
     markdown_cell_metrics_df: pd.DataFrame,
     user_pt_df: Optional[pd.DataFrame] = None,
+    how="left",
 ) -> pd.DataFrame:
     aggregated_code_cell_metrics_df = get_aggregated_code_cell_metrics(code_df=code_cell_metrics_df)
     aggregated_markdown_cell_metrics_df = get_aggregated_markdown_cell_metrics(markdown_df=markdown_cell_metrics_df)
-    logger.info("Going to merge...")
-    notebook_metrics_df = aggregated_code_cell_metrics_df.merge(aggregated_markdown_cell_metrics_df, how="left").fillna(
-        0
+    logger.info(
+        f"Going to merge..."
+        f"aggregated_code_cell_metrics_df.columns:{aggregated_code_cell_metrics_df.columns}\n"
+        f"aggregated_code_cell_metrics_df.shape:{aggregated_code_cell_metrics_df.shape}\n"
+        f"aggregated_markdown_cell_metrics_df.columns:{aggregated_markdown_cell_metrics_df.columns}\n"
+        f"aggregated_markdown_cell_metrics_df.shape:{aggregated_markdown_cell_metrics_df.shape}\n"
     )
+    notebook_metrics_df = aggregated_code_cell_metrics_df.merge(
+        aggregated_markdown_cell_metrics_df,
+        how=how,
+        on="kernel_id",
+    ).fillna(0)
     if user_pt_df is not None:
         notebook_metrics_df = notebook_metrics_df.merge(user_pt_df, how="left").fillna(0)
         notebook_metrics_df.kernel_id = notebook_metrics_df["kernel_id"].astype(int)

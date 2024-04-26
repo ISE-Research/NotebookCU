@@ -101,4 +101,5 @@ def extract_notebook_metrics_from_ipynb_file(
     return get_aggregated_notebook_metrics(
         df_codes_metrics,
         df_markdowns_metrics,
+        how="outer",
     )
