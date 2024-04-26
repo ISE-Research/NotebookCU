@@ -1,8 +1,12 @@
 from enum import Enum
 
-from classifiers import (BaseClassifier, CatBoostClassifierCustom,
-                         DecisionTreeClassifierCustom,
-                         RandomTreeClassifierCustom, XGBoostClassifierCustom)
+from core.classifiers import (
+    BaseClassifier,
+    CatBoostClassifierCustom,
+    DecisionTreeClassifierCustom,
+    RandomTreeClassifierCustom,
+    XGBoostClassifierCustom,
+)
 
 
 class FileType(str, Enum):

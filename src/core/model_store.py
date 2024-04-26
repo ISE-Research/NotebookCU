@@ -4,9 +4,9 @@ from hashlib import blake2b
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import config
-from classifiers import BaseClassifier
-from enums import ModelType
+import utils.config as config
+from core.classifiers import BaseClassifier
+from core.enums import ModelType
 
 logger = logging.getLogger(__name__)
 

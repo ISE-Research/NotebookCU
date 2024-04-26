@@ -26,16 +26,20 @@ To use the function, you will need certain CSV files containing notebook code an
 - [cache](./cache/): Is used for cached data.
 
 ## CLI
-First, cd to the src directory and then use below command and start your journey.
+First, cd to the src directory and then execute `cli.py` file and start your journey.
 ```bash
+cd src
+export PYTHONPATH="$(pwd)"
 python cli.py --help
 ```
-Use --help for each command to get further instructions.
+Use --help for each command to get further instructions. Some use cases are provided below.
 
 ## FastAPI
-First, cd to the src directory and then use below command and start your journey.
+First, cd to the src directory and then execute `main.py` file and start your journey.
 ```bash
-uvicorn main:app --reload
+cd src
+export PYTHONPATH="$(pwd)"
+python main.py
 ```
 after this you can see the documentation of the apis at http://localhost:8000/docs.
 

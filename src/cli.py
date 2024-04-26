@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 from typing import Optional
@@ -5,19 +6,19 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
-import config
-from classification_data import DataSelector
-from classifiers import BaseClassifier
-from enums import FileType, ModelType
-from extract_metrics import extract_notebook_metrics_from_ipynb_file
-from logger import init_logger
-from model_store import ModelStore
-from notebook_metrics import aggregate_notebook_metrics
-from process_cell_metrics import (run_code_metrics_extraction,
-                                  run_markdown_metrics_extraction)
-from validators import (build_extension_validator,
-                        validate_metrics_filters_key,
-                        validate_scores_filters_key)
+import utils.config as config
+from core.classification_data import DataSelector
+from core.classifiers import BaseClassifier
+from core.enums import FileType, ModelType
+from core.extract_metrics import extract_notebook_metrics_from_ipynb_file
+from core.model_store import ModelStore
+from core.notebook_metrics import aggregate_notebook_metrics
+from core.process_cell_metrics import (run_code_metrics_extraction,
+                                       run_markdown_metrics_extraction)
+from utils.logger import init_logger
+from utils.validators import (build_extension_validator,
+                              validate_metrics_filters_key,
+                              validate_scores_filters_key)
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
@@ -43,14 +44,18 @@ def extract_dataframe_metrics(
     ] = Path(config.CODE_METRICS_DF_FILE_PATH),
     chunk_size: Annotated[
         int,
-        typer.Argument(
-            help="Size of chunks for processing the csv.",
+        typer.Option(
+            "--chunk-size",
+            "-cs",
+            help="Size of chunks for processing the base code df csv.",
             min=100,
         ),
     ] = config.CHUNK_SIZE,
     limit_chunk_count: Annotated[
         int,
-        typer.Argument(
+        typer.Option(
+            "--limit-chunk-count",
+            "-lc",
             help="Number of chunks to process (leave as is for no limit).",
             min=-1,
         ),
@@ -114,7 +119,7 @@ def aggregate_metrics(
             help="File path for PT score.",
             exists=True,
             dir_okay=False,
-            callback=build_extension_validator([".csv"]),
+            callback=build_extension_validator([".csv"], nullable=True),
         ),
     ] = None,
 ):
@@ -194,11 +199,7 @@ def train_model(
     selection_ratio: Annotated[
         float,
         typer.Option(
-            "--selection-ratio",
-            "-sr",
-            min=0,
-            max=1,
-            help="Decides what ratio of each split partakes in the training."
+            "--selection-ratio", "-sr", min=0, max=1, help="Decides what ratio of each split partakes in the training."
         ),
     ] = 0.25,
     notebook_metrics_filters_key: Annotated[
@@ -319,7 +320,12 @@ def extract_notebook_metrics(
     ] = Path(config.CODE_DF_FILE_PATH),
     chunk_size: Annotated[
         int,
-        typer.Option("--chunk-size", "-cs", help="Size of chunks for processing the base code df csv."),
+        typer.Option(
+            "--chunk-size",
+            "-cs",
+            help="Size of chunks for processing the base code df csv.",
+            min=100,
+        ),
     ] = config.CHUNK_SIZE,
 ):
     """
@@ -335,7 +341,8 @@ def extract_notebook_metrics(
         extracted_notebook_metrics_df.to_csv(str(output_file_path.resolve()))
     elif output_file_path.suffix == ".json":
         with open(str(output_file_path.resolve()), "w") as file:
-            file.write(extracted_notebook_metrics_df.iloc[[0]].to_json(orient="records", indent=4))
+            extracted_notebook_metrics_dict = extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0]
+            file.write(json.dumps(extracted_notebook_metrics_dict, indent=4))
     else:
         raise typer.BadParameter("Invalid file extension. Only csv and json files supported")
 
@@ -379,7 +386,12 @@ def predict(
     ] = Path(config.CODE_DF_FILE_PATH),
     chunk_size: Annotated[
         int,
-        typer.Option("--chunk-size", "-cs", help="Size of chunks for processing the base code df csv."),
+        typer.Option(
+            "--chunk-size",
+            "-cs",
+            help="Size of chunks for processing the base code df csv.",
+            min=100,
+        ),
     ] = config.CHUNK_SIZE,
     pt_score: Annotated[
         Optional[int],
@@ -420,4 +432,3 @@ def predict(
 if __name__ == "__main__":
     init_logger()
     app()
-    # TODO: create FastAPI service

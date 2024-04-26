@@ -2,14 +2,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, UploadFile, Body, Query
+from fastapi import Body, FastAPI, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
-import config
-from extract_metrics import extract_notebook_metrics_from_ipynb_file
-from logger import init_logger
-from model_store import ModelStore
+import utils.config as config
+from core.extract_metrics import extract_notebook_metrics_from_ipynb_file
+from core.model_store import ModelStore
+from utils.logger import init_logger
 
 init_logger()
 model_store = ModelStore()

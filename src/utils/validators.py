@@ -3,7 +3,7 @@ from typing import List
 
 import typer
 
-from classification_data import DataSelector
+from core.classification_data import DataSelector
 
 
 def build_extension_validator(
@@ -12,7 +12,7 @@ def build_extension_validator(
 ):
     def validate_extension(value: Path) -> Path:
         if nullable and value is None:
-            return value        
+            return value
         extension = value.suffix.lower()
         if extension not in valid_extensions:
             raise typer.BadParameter(

@@ -3,9 +3,8 @@ import logging
 import pandas as pd
 from tqdm import tqdm
 
-import config
-from cell_metrics import (extract_code_metrics, extract_markdown_metrics,
-                          get_eap_score_dict)
+import utils.config as config
+from core.cell_metrics import extract_code_metrics, extract_markdown_metrics, get_eap_score_dict
 
 logger = logging.getLogger(__name__)
 

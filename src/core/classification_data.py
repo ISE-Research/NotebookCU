@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-import config
+import utils.config as config
 
 logger = logging.getLogger(__name__)
 

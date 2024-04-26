@@ -4,7 +4,7 @@ from typing import Optional
 import pandas as pd
 from tqdm import tqdm
 
-import config
+import utils.config as config
 
 logger = logging.getLogger(__name__)
 

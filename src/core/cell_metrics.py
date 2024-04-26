@@ -10,7 +10,7 @@ import pandas as pd
 from radon.visitors import ComplexityVisitor
 from tqdm import tqdm
 
-from config import CACHE_PATH
+from utils.config import CACHE_PATH
 
 logger = logging.getLogger(__name__)
 
