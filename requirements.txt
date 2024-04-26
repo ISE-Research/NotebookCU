@@ -1,0 +1,13 @@
+scikit-learn
+catboost
+pandas
+radon
+xgboost
+tqdm
+numpy
+environs
+isort
+typer
+fastapi
+uvicorn==0.29.0
+python-multipart
