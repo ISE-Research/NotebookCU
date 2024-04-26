@@ -442,27 +442,42 @@ def extract_markdown_metrics(md_df: pd.DataFrame) -> pd.DataFrame:
     return md_df.drop(columns=columns_to_drop)
 
 
-def cache_result(func):
+class EAPCache:
+    cache = {}
 
-    def wrapper(*args, **kwargs):
-        args_hash = hashlib.blake2b(str(args).encode(), digest_size=10).hexdigest()
-        filename = os.path.join(CACHE_PATH, f"{func.__name__}${args_hash}.json")
+    @classmethod
+    def cache_result(cls, func):
 
-        if os.path.exists(filename):
-            with open(filename, "r") as file:
-                return json.load(file)
+        def wrapper(*args, **kwargs):
+            args_hash = hashlib.blake2b(str(args).encode(), digest_size=10).hexdigest()
 
-        result = func(*args, **kwargs)
+            if args_hash in cls.cache:
+                logger.info(f"Using mem cached results for: {args}.")
+                return cls.cache.get(args_hash)
 
-        with open(filename, "w") as file:
-            json.dump(result, file)
+            filename = os.path.join(CACHE_PATH, f"{func.__name__}${args_hash}.json")
 
-        return result
+            if os.path.exists(filename):
+                with open(filename, "r") as file:
+                    logger.info(f"Using file cached results for: {args}.")
+                    result = json.load(file)
+                    cls.cache[args_hash] = result
+                    return result
 
-    return wrapper
+            logger.info(f"Going to execute no cache found for: {args}.")
+            result = func(*args, **kwargs)
+
+            cls.cache[args_hash] = result
+
+            with open(filename, "w") as file:
+                json.dump(result, file)
+
+            return result
+
+        return wrapper
 
 
-@cache_result
+@EAPCache.cache_result
 def get_eap_score_dict(code_df_file_path: str, chunk_size: int) -> dict:
     chunk_reader = pd.read_csv(code_df_file_path, chunksize=chunk_size)
     api_list = []
