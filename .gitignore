@@ -122,8 +122,5 @@ cython_debug/
 # PyCharm
 .idea/
 
-# Notebooks
-*.ipynb
-
 # Catboost
 catboost_info
