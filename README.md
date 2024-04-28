@@ -53,7 +53,7 @@ python main.py
 after this you can see the documentation of the apis at http://localhost:8000/docs.
 
 ## Docker
-Use below command to build and run the container using docker compose
+Use below command to build and run the image using docker compose
 ```bash
 docker compose up --build
 ```
