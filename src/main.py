@@ -1,10 +1,12 @@
 import logging
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from pydantic import BaseModel, Field, field_validator
+from starlette.background import BackgroundTask
 from typing_extensions import Annotated
 
 import utils.config as config
@@ -46,6 +48,33 @@ app = FastAPI(
         "email": "masihbr@gmail.com",
     },
 )
+
+
+@app.middleware("http")
+async def logger_middleware(request: Request, call_next):
+    start_time = time.time()
+    req_body = await request.body()
+    response = await call_next(request)
+
+    res_body = b""
+    async for chunk in response.body_iterator:
+        res_body += chunk
+
+    req_info = (
+        f"\npath: {request.url.path}\npath_params: {request.path_params}\nbody: {req_body}\ndict: {request.__dict__}"
+    )
+
+    res_info = f"\nbody: {res_body}\ndict: {response.__dict__}"
+    task = BackgroundTask(
+        logger.info, f"request_info: {req_info}\nresponse_info: {res_info} in {time.time() - start_time} seconds."
+    )
+    return Response(
+        content=res_body,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type,
+        background=task,
+    )
 
 
 class ModelInfo(BaseModel):
