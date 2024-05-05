@@ -29,7 +29,7 @@ API to check your coding quality.
 
 You will be able to select the model which decides if your code is comprehensive enough.
 <br/>
-Information about the training parameters of the model is provided in the /models/ endpoint.
+Information about the training parameters of the models is provided in the /models/ endpoint.
 
 
 ## Notebooks
