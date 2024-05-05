@@ -27,15 +27,18 @@ API to check your coding quality.
 
 ## Models
 
-You will be able to select the model which decides if your code is comprehensive enough based on the details about the training of the model.
+You will be able to select the model which decides if your code is comprehensive enough.
+<br/>
+Information about the training parameters of the models is provided in the /models/ endpoint.
+
 
 ## Notebooks
 
-You will be able to upload your notebooks.
+You will be able to upload your notebooks to extract their metrics and check if they are comprehensive enough.
 
-* **Upload Notebook**: Upload your notebook and get its identifier.
-* **Get Metrics**: See the metrics about your notebook.
-* **Get Prediction**: See if your code is comprehensive or not based on the selected model.
+* **Upload Your Notebook**: Upload your notebook and get its identifier (file name in saved on the server).
+* **Get Notebook Metrics**: See the metrics of your notebook.
+* **Get Notebook Prediction**: See if your code is comprehensive or not based on the selected model (chosen from the /models/ API).
 """
 
 app = FastAPI(
@@ -241,11 +244,17 @@ def extract_metrics(info: MetricsExtractionInfo) -> MetricsExtractionResponse:
     """
     file_path = Path(config.NOTEBOOKS_FOLDER_PATH) / info.notebook_filename
     if not file_path.is_file():
-        raise HTTPException(status_code=404, detail="Specified notebook does not exist.")
+        raise HTTPException(
+            status_code=404,
+            detail="Specified notebook does not exist. Please upload the file again (/notebook/upload/ API) or make sure you have the correct file name.",
+        )
 
     base_code_df_file_path = Path(config.DATAFRAMES_FOLDER_PATH) / info.base_code_df_filename
     if not base_code_df_file_path.is_file():
-        raise HTTPException(status_code=404, detail="Specified code df does not exist.")
+        raise HTTPException(
+            status_code=404,
+            detail="Specified code df does not exist. You can exclude this field from your request body to use the default code df.",
+        )
 
     try:
         extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
@@ -255,17 +264,23 @@ def extract_metrics(info: MetricsExtractionInfo) -> MetricsExtractionResponse:
         )
     except Exception as exc:
         logger.error(f"Exception on extracting notebook metrics: {exc}")
-        raise HTTPException(status_code=400, detail="Could not extract the metrics from the provided notebook.")
+        raise HTTPException(
+            status_code=400,
+            detail="Could not extract the metrics from the provided notebook file. Please upload a different notebook file and try again or contact the admin (info on top of the page)..",
+        )
 
     if len(extracted_notebook_metrics_df) != 1:
-        raise HTTPException(status_code=404, detail="Notebook file is empty (No metrics were extracted).")
+        raise HTTPException(
+            status_code=404,
+            detail="Notebook file is empty (No metrics were extracted). Please upload a different notebook file and try again or contact the admin (info on top of the page).",
+        )
 
     extracted_notebook_metrics_df.drop(["kernel_id"], axis=1, inplace=True)
     return MetricsExtractionResponse(metrics=extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0])
 
 
 class PredictionInfo(MetricsExtractionInfo):
-    model_id: str = Field(examples=["1234ABCD"], description="Use ids in the response of models/ api.")
+    model_id: str = Field(examples=[list(model_store.active_models.keys())[0]], description="Use ids in the response of models/ api.")
     pt_score: Optional[int] = Field(
         default=None, examples=[10], description="Only set when model has value True for its include_pt field."
     )
@@ -292,11 +307,17 @@ def predict(info: PredictionInfo) -> PredictionResponse:
     """
     file_path = Path(config.NOTEBOOKS_FOLDER_PATH) / info.notebook_filename
     if not file_path.is_file():
-        raise HTTPException(status_code=404, detail="Specified notebook does not exist.")
+        raise HTTPException(
+            status_code=404,
+            detail="Specified notebook does not exist. Please upload the file again (/notebook/upload/ API) or make sure you have the correct file name.",
+        )
 
     base_code_df_file_path = Path(config.DATAFRAMES_FOLDER_PATH) / info.base_code_df_filename
     if not base_code_df_file_path.is_file():
-        raise HTTPException(status_code=404, detail="Specified code df does not exist.")
+        raise HTTPException(
+            status_code=404,
+            detail="Specified code df does not exist. You can exclude this field from your request body to use the default code df.",
+        )
 
     try:
         extracted_notebook_metrics_df = extract_notebook_metrics_from_ipynb_file(
@@ -306,15 +327,24 @@ def predict(info: PredictionInfo) -> PredictionResponse:
         )
     except Exception as exc:
         logger.error(f"Exception on extracting notebook metrics: {exc}")
-        raise HTTPException(status_code=400, detail="Could not extract the metrics from the provided notebook.")
+        raise HTTPException(
+            status_code=400,
+            detail="Could not extract the metrics from the provided notebook file. Please upload a different notebook file and try again or contact the admin (info on top of the page)..",
+        )
 
     if len(extracted_notebook_metrics_df) != 1:
-        raise HTTPException(status_code=404, detail="Notebook file is empty (No metrics were extracted).")
+        raise HTTPException(
+            status_code=404,
+            detail="Notebook file is empty (No metrics were extracted). Please upload a different notebook file and try again or contact the admin (info on top of the page)..",
+        )
 
     extracted_notebook_metrics_df.drop(["kernel_id"], axis=1, inplace=True)
     classifier = model_store.get_model(info.model_id)
     if classifier is None:
-        raise HTTPException(status_code=404, detail="Specified model id does not exist.")
+        raise HTTPException(
+            status_code=404,
+            detail="Specified model id does not exist. Checkout the /models/ endpoint documentation to get the right id for your need.",
+        )
 
     # TODO: standardize column names
     extracted_notebook_metrics_df.rename(
@@ -325,7 +355,10 @@ def predict(info: PredictionInfo) -> PredictionResponse:
     )
     if info.pt_score is not None:
         if not model_store.get_model_info(info.model_id).get("include_pt"):
-            raise Exception(status_code=400, detail="Specified model does not take PT score.")
+            raise Exception(
+                status_code=400,
+                detail="Specified model does not take PT score. Please remove the pt_score field from your request body or use a different model.",
+            )
         extracted_notebook_metrics_df["PT"] = info.pt_score
 
     result = classifier.predict(x=extracted_notebook_metrics_df)
