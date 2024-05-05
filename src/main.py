@@ -36,7 +36,7 @@ Information about the training parameters of the models is provided in the /mode
 
 You will be able to upload your notebooks to extract their metrics and check if they are comprehensive enough.
 
-* **Upload Your Notebook**: Upload your notebook and get its identifier (file name in saved on the server).
+* **Upload Your Notebook**: Upload your notebook and get its identifier (file name saved on the server).
 * **Get Notebook Metrics**: See the metrics of your notebook.
 * **Get Notebook Prediction**: See if your code is comprehensive or not based on the selected model (chosen from the /models/ API).
 """
