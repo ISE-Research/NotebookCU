@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile, responses
 from pydantic import BaseModel, Field, field_validator
 from starlette.background import BackgroundTask
 from typing_extensions import Annotated
@@ -366,6 +366,11 @@ def predict(info: PredictionInfo) -> PredictionResponse:
         metrics=extracted_notebook_metrics_df.iloc[[0]].to_dict(orient="index")[0],
         prediction=int(result[0]),
     )
+
+
+@app.get("/", include_in_schema=False)
+async def docs_redirect():
+    return responses.RedirectResponse(url="/docs")
 
 
 if __name__ == "__main__":
