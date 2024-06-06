@@ -43,6 +43,23 @@ python cli.py --help
 ```
 Use --help for each command to get further instructions. Some use cases are provided below.
 
+```bash
+python cli.py
+python cli.py extract-dataframe-metrics --help
+python cli.py extract-dataframe-metrics --chunk-size 100 --limit-chunk-count 5
+python cli.py extract-dataframe-metrics ../dataframes/markdown.csv ../metrics/markdown_cell_metrics.csv --chunk-size 100 --limit-chunk-count 5 --file-type markdown
+
+python cli.py aggregate-metrics --help
+python cli.py aggregate-metrics ../metrics/code_cell_metrics.csv ../metrics/markdown_cell_metrics.csv ../metrics/notebook_metrics_lite.csv
+
+python cli.py extract-notebook-metrics --help
+python cli.py extract-notebook-metrics ../notebooks/file.ipynb ../notebooks/results.json
+python cli.py extract-notebook-metrics ../notebooks/file.ipynb ../notebooks/results.csv
+
+python cli.py predict ../notebooks/file.ipynb cat_boost ../models/catBoostClassifier.withOutPT.sf50.sr20.combined_score.v2.model 
+python cli.py predict ../notebooks/file.ipynb cat_boost ../models/catBoostClassifier.withPT.sf50.sr20.combined_score.v2.model --pt-score 10
+```
+
 ## FastAPI
 First, cd to the src directory and then execute `main.py` file and start your journey.
 ```bash
