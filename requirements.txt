@@ -4,7 +4,7 @@ pandas
 radon
 xgboost
 tqdm
-numpy
+numpy==1.26.4
 environs
 isort
 typer
