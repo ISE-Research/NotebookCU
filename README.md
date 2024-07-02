@@ -1,4 +1,4 @@
-# Code Comprehension Predictor Service
+# Predicting the Understandability of Computational Notebooks through Code Metrics Analysis
 
 This repository contains the source code for a code comprehension predictor service.
 
