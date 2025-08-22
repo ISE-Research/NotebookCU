@@ -74,3 +74,21 @@ Use below command to build and run the image using docker compose
 ```bash
 docker compose up --build
 ```
+
+## Citation
+This work is published in the Empirical Software Engineering journal, under the title of "Predicting the understandability of computational notebooks through code metrics analysis". 
+
+Access the paper from: <a href="https://rdcu.be/ehKdi" target="_blank">https://rdcu.be/ehKdi</a>.
+
+```python
+@article{ghahfarokhi2025predicting,
+  title={Predicting the understandability of computational notebooks through code metrics analysis},
+  author={Ghahfarokhi, Mojtaba Mostafavi and Asadi, Alireza and Asgari, Arash and Mohammadi, Bardia and Heydarnoori, Abbas},
+  journal={Empirical Software Engineering},
+  volume={30},
+  number={3},
+  pages={98},
+  year={2025},
+  publisher={Springer}
+}
+```
